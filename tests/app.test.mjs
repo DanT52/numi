@@ -62,9 +62,12 @@ const persisted = () => JSON.parse(stored.get("numi.progress.v1"));
 test("lesson, persistence, visual tools, and calculator user flows", async (t) => {
   mount();
   await import("../dist/app.js");
-  await t.test("catalog has all eight lessons and future curriculum", () => {
+  await t.test("catalog has all lessons and future curriculum", () => {
     assert.equal(document.querySelectorAll(".topic-card").length, 4);
-    assert.equal(document.querySelectorAll(".lesson-link").length, 8);
+    assert.equal(
+      document.querySelectorAll(".lesson-link").length,
+      lessons.length,
+    );
     assert.equal(document.querySelectorAll(".future-card").length, 2);
     assert.match(document.body.textContent, /To be added/);
     click("filter:integers");
@@ -306,7 +309,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
         click("lesson:" + lesson.id);
         if (document.querySelector('[data-action="begin-practice"]'))
           click("begin-practice");
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < lesson.problems.length; i++) {
           click("question:" + i);
           type("#answer", lesson.problems[i].answer);
           submit("#answer-form");
@@ -318,12 +321,13 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
         click("all-lessons");
       }
       click("view:progress");
-      assert.match(document.querySelector(".stats-grid").textContent, /64/);
+      assert.match(document.querySelector(".stats-grid").textContent, /132/);
       assert.match(document.querySelector(".stats-grid").textContent, /100/);
       assert.equal(
-        lessons.filter((l) => persisted().progress[l.id].solved.length === 8)
-          .length,
-        8,
+        lessons.filter(
+          (l) => persisted().progress[l.id].solved.length === l.problems.length,
+        ).length,
+        lessons.length,
       );
     },
   );
@@ -407,7 +411,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
     "reload restores unfinished answer and question position",
     async () => {
       click("home");
-      click("lesson:fractions-1");
+      click("lesson:fractions-mixed");
       if (document.querySelector('[data-action="begin-practice"]'))
         click("begin-practice");
       click("question:4");
@@ -417,7 +421,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       assert.equal(document.querySelector("#answer").value, "3 3/4");
       assert.match(
         document.querySelector(".workspace-top").textContent,
-        /PROBLEM 5 OF 8/,
+        /PROBLEM 5 OF 12/,
       );
       assert.equal(
         persisted().progress["integers-1"].solved.length,
@@ -428,15 +432,15 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
     },
   );
   await t.test(
-    "fraction guide shows equivalent fractions for all four operations and mixed numbers",
+    "fraction addition guide shows equivalent fractions and subtraction walkthrough",
     () => {
       click("home");
-      click("lesson:fractions-1");
+      click("lesson:fractions-add-subtract");
       click("example");
-      assert.ok(document.querySelectorAll(".step-equation mfrac").length >= 20);
+      assert.ok(document.querySelectorAll(".step-equation mfrac").length >= 10);
       assert.equal(
         document.querySelectorAll(".more-examples details").length,
-        4,
+        1,
       );
       assert.match(
         document.querySelector(".example-steps").textContent,
@@ -471,15 +475,52 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       type("#progress-code-input", code);
       click("import-progress-code");
       assert.equal(
-        lessons.filter((l) => persisted().progress[l.id].solved.length === 8)
-          .length,
-        8,
+        lessons.filter(
+          (l) => persisted().progress[l.id].solved.length === l.problems.length,
+        ).length,
+        lessons.length,
       );
       assert.match(
         document.querySelector(".transfer-status").textContent,
         /imported and saved/,
       );
-      assert.equal(persisted().progress["fractions-1"].answers[4], "3 3/4");
+      assert.equal(persisted().progress["fractions-mixed"].answers[4], "3 3/4");
+    },
+  );
+  await t.test(
+    "older local fraction progress opens at the matching new question",
+    async () => {
+      stored.set(
+        "numi.progress.v1",
+        JSON.stringify({
+          version: 1,
+          view: "lessons",
+          topic: "all",
+          lesson: "fractions-1",
+          progress: {
+            "fractions-1": {
+              index: 1,
+              stage: "practice",
+              solved: [0, 1],
+              answers: { 0: "3/4", 1: "7/12" },
+              hints: [1],
+              reveals: [],
+            },
+          },
+        }),
+      );
+      mount();
+      await import("../dist/app.js?legacy-fractions");
+      assert.equal(persisted().lesson, "fractions-add-subtract");
+      assert.match(
+        document.querySelector(".workspace-top").textContent,
+        /PROBLEM 9 OF 12/,
+      );
+      assert.equal(document.querySelector("#answer").value, "7/12");
+      assert.deepEqual(
+        persisted().progress["fractions-add-subtract"].solved,
+        [0, 8],
+      );
     },
   );
 });

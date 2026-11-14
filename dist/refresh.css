@@ -711,6 +711,30 @@ footer {
   font-size: 1.6rem;
 }
 /* Quick Tools is a nonmodal companion panel: the lesson remains interactive. */
+.topic-card:has([data-action="lesson:fractions-simplify"]) {
+  grid-column: 1/-1;
+}
+.topic-card:has([data-action="lesson:fractions-simplify"]) .lesson-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 20px;
+}
+.question-dots {
+  grid-template-columns: repeat(4, 1fr);
+}
+@media (max-width: 800px) {
+  .question-dots {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+@media (max-width: 540px) {
+  .topic-card:has([data-action="lesson:fractions-simplify"]) .lesson-links {
+    grid-template-columns: 1fr;
+  }
+  .question-dots {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
 .topic-card .topic-icon,
 .topic-icon.peach,
 .topic-icon.purple,

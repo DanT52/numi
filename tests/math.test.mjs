@@ -83,13 +83,16 @@ test("prime products only contain prime factors", () => {
   assert.equal(isPrimeProduct("1*2*3"), false);
   assert.equal(isPrimeProduct("2+3"), false);
 });
-test("eight complete lessons with worked examples and 64 valid problems", () => {
-  assert.equal(lessons.length, 8);
-  assert.equal(new Set(lessons.map((l) => l.id)).size, 8);
+test("expanded curriculum has complete lessons and valid problems", () => {
+  assert.equal(lessons.length, 13);
+  assert.equal(new Set(lessons.map((l) => l.id)).size, 13);
   for (const topic of topics)
-    assert.equal(lessons.filter((l) => l.topic === topic.id).length, 2);
+    assert.equal(
+      lessons.filter((l) => l.topic === topic.id).length,
+      topic.id === "fractions" ? 7 : 2,
+    );
   for (const lesson of lessons) {
-    assert.equal(lesson.problems.length, 8);
+    assert.equal(lesson.problems.length, lesson.topic === "fractions" ? 12 : 8);
     assert.ok(lesson.example.steps.length >= 3);
     assert.ok(lesson.rule);
     for (const p of lesson.problems) {
@@ -106,7 +109,7 @@ test("arithmetic lesson answers agree with an independently evaluated expression
   for (const lesson of lessons.filter(
     (l) => !l.id.startsWith("factors") && l.id !== "fractions-2",
   ))
-    for (const p of lesson.problems)
+    for (const p of lesson.problems.filter((p) => p.type !== "equivalent"))
       assert.ok(
         Math.abs(calculate(p.expr) - calculate(p.answer)) < 1e-10,
         lesson.id + ": " + p.expr,

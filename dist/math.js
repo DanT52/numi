@@ -147,6 +147,32 @@ export function isPrimeProduct(input) {
 }
 export function checkAnswer(input, problem) {
   try {
+    if (
+      problem.type === "mixed" &&
+      !/^\s*\d+\s+\d+\s*\/\s*[1-9]\d*\s*$/.test(input)
+    )
+      return {
+        correct: false,
+        message: "Write a mixed number, such as 1 3/4.",
+      };
+    if (problem.type === "simplified") {
+      const match = String(input)
+        .trim()
+        .match(/^(-?\d+)(?:\s*\/\s*([1-9]\d*))?$/);
+      if (!match)
+        return {
+          correct: false,
+          message:
+            "Write the simplest fraction using whole numbers, such as 3/4.",
+        };
+      const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
+      if (gcd(Number(match[1]), Number(match[2] || 1)) !== 1)
+        return {
+          correct: false,
+          message:
+            "Reduce this fraction further by dividing both parts by a common factor.",
+        };
+    }
     if (!String(input).trim())
       return {
         correct: false,

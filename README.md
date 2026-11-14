@@ -14,7 +14,7 @@ Open http://localhost:4173. Run `npm test` to check arithmetic parsing, answer v
 
 ## What's included
 
-- Eight guided lessons, two per topic, with eight problems each (64 total), worked examples, hints, explanations, and retryable answers.
+- Thirteen guided lessons with 132 problems, worked examples, hints, explanations, and retryable answers. The fraction path has seven lessons with twelve problems each (84 fraction problems): simplifying → equivalent fractions → decimal/percentage conversions → addition/subtraction → multiplication → division → mixed-number review. The other three topics each retain two lessons with eight problems each.
 - Fractions/mixed numbers; decimal/percentage conversion; signed arithmetic; PEMDAS; prime factorization, GCF, and LCM.
 - A number line with chained operations, tick-sized step controls, and all four operations. Results start hidden and appear after the last step or “Show result.” Operations run in the order listed, with each completed move drawn on the line. Other tools include signed counters and zero pairs, fraction bars, a hundred grid, a factor explorer, and a calculator.
 - MathML equations with native fraction and exponent rendering. SVG diagrams scale to fit the screen.
@@ -24,6 +24,7 @@ Open http://localhost:4173. Run `npm test` to check arithmetic parsing, answer v
 - Matcha green is the default theme. Settings also offers lavender, ocean, and warm clay, three text sizes, bolder text, and optional gentle animations. Appearance preferences save independently from lesson progress.
 - The supplied character SVGs appear as a study companion, with happy and thoughtful reactions and a matcha welcome. New answers earn ten leaf points once, and progress milestones unlock garden badges. Existing saved lessons also contribute to points and badges.
 - Guided examples use rendered MathML at every rewriting step. Working with fractions includes additional expandable examples for subtraction, multiplication, reciprocals and division, simplification, and mixed numbers. Topic icons follow the active color theme.
+- The original combined fraction lesson is migrated automatically: saved answers, solved questions, hints, and current position move to the matching new lessons. Existing conversion answers keep their original positions. Older progress codes and JSON files are also migrated. Lesson navigation, progress totals, rewards, and transfers support variable-length lessons.
 - Fractions support nonnegative whole-number numerators and positive denominators through JavaScript's maximum safe integer, including 33/75. Up to 200 pieces are individually selectable; larger denominators use a proportional fill. Large mixed numbers summarize complete wholes rather than rendering thousands of rows.
 - Number-line inputs accept finite numbers without the previous −12 to 12 limit. The axis automatically scales to the entered values, with compact tick labels and a bounded number of ticks. Arithmetic uses JavaScript numeric precision; results outside its finite range display an explanation.
 

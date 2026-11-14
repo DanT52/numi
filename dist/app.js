@@ -5,7 +5,8 @@ import {
   escapeHTML as esc,
   checkAnswer,
 } from "./math.js";
-import { topics, lessons, upcoming } from "./lessons.js";
+import { migrateFractionProgress } from "./progress-migration.js";
+import { topics, lessons, upcoming, totalProblems } from "./lessons.js";
 import { workedExamples, fractionExamples } from "./worked-examples.js";
 import {
   exportProgressCode,
@@ -75,6 +76,7 @@ let state = readState() || {
   lesson: null,
   progress: {},
 };
+state = migrateFractionProgress(state);
 if (!["lessons", "lab", "progress", "settings"].includes(state.view))
   state.view = "lessons";
 if (!lessons.some((l) => l.id === state.lesson)) state.lesson = null;
@@ -125,7 +127,7 @@ function companionCard() {
     ? feedback.correct
       ? "happy"
       : "sad"
-    : p?.solved.length === 8
+    : p?.solved.length === l?.problems.length
       ? "happy"
       : "neutral";
   const message = feedback
@@ -191,17 +193,17 @@ function heroArt() {
 }
 function home() {
   const count = solvedCount();
-  return `<section class="hero"><div class="hero-copy"><div class="eyebrow"><span class="tiny-star">✦</span> BEGINNER MATH</div><h1>Learn math,<br>step by step.</h1><p>Guided lessons and visual tools for foundational math.</p>${button((count ? "Keep learning" : "Let’s start learning") + icon("arrow"), "start-recommended", "btn btn-primary")}</div>${heroArt()}</section><div class="dashboard-grid"><section class="lesson-catalog"><div class="section-heading"><div><span class="eyebrow muted">BUILD YOUR FOUNDATION</span><h2>Lessons</h2></div><span class="count-badge">8 lessons</span></div><div class="filter-row" aria-label="Filter lessons">${[["all", "All topics"], ...topics.map((t) => [t.id, t.short])].map(([id, label]) => button(label, `filter:${id}`, `filter ${state.topic === id ? "selected" : ""}`, 'aria-pressed="' + (state.topic === id) + '"')).join("")}</div><div class="topic-grid">${topics
+  return `<section class="hero"><div class="hero-copy"><div class="eyebrow"><span class="tiny-star">✦</span> BEGINNER MATH</div><h1>Learn math,<br>step by step.</h1><p>Guided lessons and visual tools for foundational math.</p>${button((count ? "Keep learning" : "Let’s start learning") + icon("arrow"), "start-recommended", "btn btn-primary")}</div>${heroArt()}</section><div class="dashboard-grid"><section class="lesson-catalog"><div class="section-heading"><div><span class="eyebrow muted">BUILD YOUR FOUNDATION</span><h2>Lessons</h2></div><span class="count-badge">${lessons.length} lessons</span></div><div class="filter-row" aria-label="Filter lessons">${[["all", "All topics"], ...topics.map((t) => [t.id, t.short])].map(([id, label]) => button(label, `filter:${id}`, `filter ${state.topic === id ? "selected" : ""}`, 'aria-pressed="' + (state.topic === id) + '"')).join("")}</div><div class="topic-grid">${topics
     .filter((t) => state.topic === "all" || state.topic === t.id)
     .map(topicCard)
     .join(
       "",
-    )}</div></section><aside class="dashboard-aside"><div class="journey-card"><div class="aside-title">${icon("leaf")}<h3>Your learning path</h3></div><p>Every small step counts.</p><div class="progress-stat"><b>${count}<span> / 64</span></b><span>problems solved</span></div><div class="progress-track"><span style="width:${(count / 64) * 100}%"></span></div><div class="path-list">${topics
+    )}</div></section><aside class="dashboard-aside"><div class="journey-card"><div class="aside-title">${icon("leaf")}<h3>Your learning path</h3></div><p>Every small step counts.</p><div class="progress-stat"><b>${count}<span> / ${totalProblems}</span></b><span>problems solved</span></div><div class="progress-track"><span style="width:${(count / totalProblems) * 100}%"></span></div><div class="path-list">${topics
     .map((t, i) => {
       const done = lessons
         .filter((l) => l.topic === t.id)
         .reduce((a, l) => a + getProgress(l.id).solved.length, 0);
-      return `<div class="path-item"><span class="path-node ${done === 16 ? "done" : i === 0 ? "current" : ""}">${done === 16 ? "✓" : String(i + 1).padStart(2, "0")}</span><div><strong>${t.short}</strong><small>${done === 16 ? "Complete" : done ? `${done} of 16 solved` : "One step at a time"}</small></div></div>`;
+      return `<div class="path-item"><span class="path-node ${done === lessons.filter((l) => l.topic === t.id).reduce((n, l) => n + l.problems.length, 0) ? "done" : i === 0 ? "current" : ""}">${done === lessons.filter((l) => l.topic === t.id).reduce((n, l) => n + l.problems.length, 0) ? "✓" : String(i + 1).padStart(2, "0")}</span><div><strong>${t.short}</strong><small>${done === lessons.filter((l) => l.topic === t.id).reduce((n, l) => n + l.problems.length, 0) ? "Complete" : done ? `${done} of ${lessons.filter((l) => l.topic === t.id).reduce((n, l) => n + l.problems.length, 0)} solved` : "One step at a time"}</small></div></div>`;
     })
     .join(
       "",
@@ -214,14 +216,14 @@ function topicCard(t) {
     .map((l, i) => {
       const p = getProgress(l.id);
       return button(
-        `<span class="lesson-number ${p.solved.length === 8 ? "done" : ""}">${p.solved.length === 8 ? "✓" : String(i + 1).padStart(2, "0")}</span><span><strong>${l.title}</strong><small>${l.minutes} min <span>·</span> 8 problems${p.solved.length ? " · " + p.solved.length + "/8" : ""}</small></span>${icon("chevron")}`,
+        `<span class="lesson-number ${p.solved.length === l.problems.length ? "done" : ""}">${p.solved.length === l.problems.length ? "✓" : String(i + 1).padStart(2, "0")}</span><span><strong>${l.title}</strong><small>${l.sequence ? `Step ${l.sequence} of ${l.sequenceTotal} · ` : ""}${l.minutes} min <span>·</span> ${l.problems.length} problems${p.solved.length ? " · " + p.solved.length + "/" + l.problems.length : ""}</small></span>${icon("chevron")}`,
         `lesson:${l.id}`,
         "lesson-link",
       );
     })
     .join(
       "",
-    )}</div><div class="card-bottom"><span>2 guided lessons</span><span>${done ? `${done}/16 solved` : "Beginner friendly"} ${done ? icon("check") : icon("leaf")}</span></div></article>`;
+    )}</div><div class="card-bottom"><span>${ls.length} guided lessons</span><span>${done ? `${done}/${ls.reduce((n, l) => n + l.problems.length, 0)} solved` : "Beginner friendly"} ${done ? icon("check") : icon("leaf")}</span></div></article>`;
 }
 function comingSoon() {
   return `<section class="coming-soon"><div class="section-heading"><div><span class="eyebrow muted">GROW FROM HERE</span><h2>More to look forward to</h2><p>A strong foundation opens up a whole new world.</p></div><span class="badge">${icon("lock")} To be added</span></div><div class="future-grid">${upcoming.map((group, i) => `<article class="future-card"><div class="future-number">0${i + 2}</div><div><h3>${group.title}</h3><p>${i ? "From your first variable to the coordinate plane." : "Connect everyday questions to everyday math."}</p><details><summary>See ${group.items.length} upcoming topics ${icon("chevron")}</summary><ul>${group.items.map(([name, desc]) => `<li><strong>${name}</strong><span>${desc}</span></li>`).join("")}</ul></details></div></article>`).join("")}</div></section>`;
@@ -235,8 +237,8 @@ function exampleSteps(example) {
     })
     .join("");
 }
-function moreFractionExamples() {
-  return `<section class="more-examples"><h2>More fraction operations</h2>${fractionExamples.map((example) => `<details><summary>${esc(example.title)}${icon("chevron")}</summary><div class="example-equation">${math(example.expr)}</div><ol class="example-steps">${exampleSteps(example)}</ol></details>`).join("")}</section>`;
+function moreFractionExamples(examples) {
+  return `<section class="more-examples"><h2>More fraction operations</h2>${examples.map((example) => `<details><summary>${esc(example.title)}${icon("chevron")}</summary><div class="example-equation">${math(example.expr)}</div><ol class="example-steps">${exampleSteps(example)}</ol></details>`).join("")}</section>`;
 }
 function progressTransferUI() {
   return `<section class="progress-transfer" aria-labelledby="transfer-title"><h2 id="transfer-title">Transfer progress</h2><p>Export a code on this device. On another device, paste it below to import your answers and lesson progress. Existing solved problems are kept.</p><div class="transfer-actions">${button("Export progress code", "generate-progress-code", "btn btn-primary")}${button("Download progress file", "export-progress", "btn btn-outline")}</div>${transferCode ? `<label for="progress-code-output">Your progress code</label><textarea id="progress-code-output" rows="4" readonly spellcheck="false">${esc(transferCode)}</textarea>${button("Copy code", "copy-progress-code", "btn btn-outline")}` : ""}<label for="progress-code-input">Import a progress code</label><textarea id="progress-code-input" rows="4" spellcheck="false" autocomplete="off" placeholder="Paste a code starting with NUMI1.">${esc(transferDraft)}</textarea><div class="transfer-actions">${button("Import progress code", "import-progress-code", "btn btn-primary")}<label class="btn btn-outline file-import">Import a progress file<input id="import-progress" type="file" accept="application/json,.json" hidden></label></div><p class="transfer-status" role="status">${esc(transferStatus)}</p></section>`;
@@ -261,6 +263,15 @@ async function copyProgressCode() {
   }
 }
 function practiceMath(problem) {
+  if (problem.targetDenominator)
+    return (
+      math(problem.expr) +
+      '<span>=</span><math xmlns="http://www.w3.org/1998/Math/MathML" aria-label="missing numerator over ' +
+      problem.targetDenominator +
+      '"><mfrac><mo>?</mo><mn>' +
+      problem.targetDenominator +
+      "</mn></mfrac></math>"
+    );
   const pair = problem.prompt.match(/^Find the (GCF|LCM) of (\d+) and (\d+)/);
   if (pair) {
     return `<span class="math-text">${pair[1]}</span><span class="math-text">(</span>${math(pair[2])}<span class="math-text">,</span>${math(pair[3])}<span class="math-text">)</span>`;
@@ -274,20 +285,20 @@ function lessonView() {
     return home();
   }
   const p = getProgress(l.id);
-  p.index = Math.min(7, Math.max(0, p.index || 0));
+  p.index = Math.min(l.problems.length - 1, Math.max(0, p.index || 0));
   const t = topics.find((x) => x.id === l.topic),
     example = p.stage !== "practice",
     problem = l.problems[p.index];
-  return `<div class="lesson-breadcrumb">${button(icon("back") + "All lessons", "all-lessons", "text-button")}<span>/</span><span>${t.title}</span></div><div class="lesson-layout"><aside class="lesson-sidebar"><span class="topic-icon ${t.color}">${icon(t.icon)}</span><span class="eyebrow muted">${t.short}</span><h2>${l.title}</h2><p>${l.subtitle}</p><div class="mini-progress"><span>${p.solved.length} of 8 solved</span><div class="progress-track"><span style="width:${(p.solved.length / 8) * 100}%"></span></div></div>${button(icon("book") + " Worked example", "example", "sidebar-example " + (example ? "selected" : ""))}<div class="question-dots" aria-label="Practice problems">${l.problems.map((_, i) => button(p.solved.includes(i) ? icon("check") : String(i + 1), `question:${i}`, `question-dot ${!example && p.index === i ? "selected" : ""} ${p.solved.includes(i) ? "solved" : ""}`, `aria-label="Problem ${i + 1}${p.solved.includes(i) ? ", solved" : ""}"`)).join("")}</div><div class="sidebar-tip">${icon("lab")}<strong>Need a different perspective?</strong><p>Your work stays right here when you open a visual aid.</p>${button("Open visual tools " + icon("arrow"), "open-tools", "text-button")}</div></aside><section class="lesson-workspace"><div class="workspace-top"><span class="eyebrow muted">${example ? "FIRST, LET’S WALK THROUGH IT" : `YOUR TURN · PROBLEM ${p.index + 1} OF 8`}</span><span class="badge">${icon("check")} ${p.solved.length === 8 ? "Lesson complete" : "At your own pace"}</span></div>${companionCard()}${example ? `<h1>Start with an example.</h1><div class="rule-callout">${icon("info")}<p>${l.rule}</p></div><div class="example-equation">${math(l.example.expr)}</div><ol class="example-steps">${exampleSteps(workedExamples[l.id] || l.example)}</ol>${l.id === "fractions-1" ? moreFractionExamples() : ""}<div class="workspace-bottom"><span></span>${button("Try it yourself " + icon("arrow"), "begin-practice", "btn btn-primary")}</div>` : `<h1>${problem.type === "percent" ? "Convert to a percentage." : problem.type === "prime" ? "Prime factorization" : "Practice"}</h1><p class="workspace-intro">${esc(problem.prompt)}</p><div class="practice-equation">${practiceMath(problem)}</div><form id="answer-form"><label for="answer">Your answer ${problem.type === "percent" ? "<span>(as a percentage)</span>" : ""}</label><div class="answer-row"><input id="answer" name="answer" type="text" autocomplete="off" spellcheck="false" placeholder="${problem.type === "prime" ? "e.g. 2^2 * 3" : problem.type === "fraction" ? "e.g. 3/4 or 1 1/2" : "Type your answer…"}" value="${esc(p.answers[p.index] || "")}" aria-describedby="answer-format feedback">${button("Check answer " + icon("check"), "check-answer", "btn btn-primary", 'type="submit"')}</div><small id="answer-format">${problem.type === "prime" ? "Use * to multiply and ^ for exponents." : problem.type === "percent" ? "Enter a number like 75, or write 75%." : problem.type === "decimal" ? "Enter a decimal, like 0.75." : "Fractions (3/4), mixed numbers (1 1/2), and decimals are welcome."}</small></form><div id="feedback" aria-live="polite">${feedback ? `<div class="feedback ${feedback.correct ? "success" : "retry"}">${icon(feedback.correct ? "check" : "info")}<span>${esc(feedback.message)}</span></div>` : p.solved.includes(p.index) ? `<div class="feedback success">${icon("check")} You’ve solved this one. Nice work!</div>` : ""}</div><div class="help-row">${button(icon("spark") + (p.hints.includes(p.index) ? "Hide hint" : "Give me a hint"), "hint", "text-button")}${button(icon("lab") + "Visualize it", "visualize-problem", "text-button")}${button(p.reveals.includes(p.index) ? "Hide explanation" : "See explanation", "reveal", "text-button")}</div>${p.hints.includes(p.index) ? `<div class="hint-box"><strong>A little nudge</strong><p>${esc(problem.hint)}</p></div>` : ""}${p.reveals.includes(p.index) ? `<div class="hint-box"><strong>Let’s work through it</strong><p>${esc(problem.solution)}</p><div class="solution-answer">Answer: ${math(problem.answer)}${problem.type === "percent" ? "%" : ""}</div><small>Read it through, then try entering the answer yourself.</small></div>` : ""}<div class="workspace-bottom">${button(icon("back") + "Previous", "previous-question", "btn btn-outline")}${p.index < 7 ? button("Next problem " + icon("arrow"), "next-question", "btn btn-primary") : button((p.solved.length === 8 ? "Lesson complete" : "Review my progress") + " " + icon("arrow"), "lesson-review", "btn btn-primary")}</div>`}</section></div>`;
+  return `<div class="lesson-breadcrumb">${button(icon("back") + "All lessons", "all-lessons", "text-button")}<span>/</span><span>${t.title}</span></div><div class="lesson-layout"><aside class="lesson-sidebar"><span class="topic-icon ${t.color}">${icon(t.icon)}</span><span class="eyebrow muted">${t.short}</span><h2>${l.title}</h2><p>${l.subtitle}</p><div class="mini-progress"><span>${p.solved.length} of ${l.problems.length} solved</span><div class="progress-track"><span style="width:${(p.solved.length / l.problems.length) * 100}%"></span></div></div>${button(icon("book") + " Worked example", "example", "sidebar-example " + (example ? "selected" : ""))}<div class="question-dots" aria-label="Practice problems">${l.problems.map((_, i) => button(p.solved.includes(i) ? icon("check") : String(i + 1), `question:${i}`, `question-dot ${!example && p.index === i ? "selected" : ""} ${p.solved.includes(i) ? "solved" : ""}`, `aria-label="Problem ${i + 1}${p.solved.includes(i) ? ", solved" : ""}"`)).join("")}</div><div class="sidebar-tip">${icon("lab")}<strong>Need a different perspective?</strong><p>Your work stays right here when you open a visual aid.</p>${button("Open visual tools " + icon("arrow"), "open-tools", "text-button")}</div></aside><section class="lesson-workspace"><div class="workspace-top"><span class="eyebrow muted">${example ? "FIRST, LET’S WALK THROUGH IT" : `YOUR TURN · PROBLEM ${p.index + 1} OF ${l.problems.length}`}</span><span class="badge">${icon("check")} ${p.solved.length === l.problems.length ? "Lesson complete" : "At your own pace"}</span></div>${companionCard()}${example ? `<h1>Start with an example.</h1><div class="rule-callout">${icon("info")}<p>${l.rule}</p></div><div class="example-equation">${math(l.example.expr)}</div><ol class="example-steps">${exampleSteps(workedExamples[l.id] || l.example)}</ol>${l.moreExamples?.length ? moreFractionExamples(l.moreExamples) : ""}<div class="workspace-bottom"><span></span>${button("Try it yourself " + icon("arrow"), "begin-practice", "btn btn-primary")}</div>` : `<h1>${problem.type === "percent" ? "Convert to a percentage." : problem.type === "prime" ? "Prime factorization" : "Practice"}</h1><p class="workspace-intro">${esc(problem.prompt)}</p><div class="practice-equation">${practiceMath(problem)}</div><form id="answer-form"><label for="answer">Your answer ${problem.type === "percent" ? "<span>(as a percentage)</span>" : ""}</label><div class="answer-row"><input id="answer" name="answer" type="text" autocomplete="off" spellcheck="false" placeholder="${problem.type === "prime" ? "e.g. 2^2 * 3" : problem.type === "fraction" ? "e.g. 3/4 or 1 1/2" : "Type your answer…"}" value="${esc(p.answers[p.index] || "")}" aria-describedby="answer-format feedback">${button("Check answer " + icon("check"), "check-answer", "btn btn-primary", 'type="submit"')}</div><small id="answer-format">${problem.type === "prime" ? "Use * to multiply and ^ for exponents." : problem.type === "percent" ? "Enter a number like 75, or write 75%." : problem.type === "decimal" ? "Enter a decimal, like 0.75." : "Fractions (3/4), mixed numbers (1 1/2), and decimals are welcome."}</small></form><div id="feedback" aria-live="polite">${feedback ? `<div class="feedback ${feedback.correct ? "success" : "retry"}">${icon(feedback.correct ? "check" : "info")}<span>${esc(feedback.message)}</span></div>` : p.solved.includes(p.index) ? `<div class="feedback success">${icon("check")} You’ve solved this one. Nice work!</div>` : ""}</div><div class="help-row">${button(icon("spark") + (p.hints.includes(p.index) ? "Hide hint" : "Give me a hint"), "hint", "text-button")}${button(icon("lab") + "Visualize it", "visualize-problem", "text-button")}${button(p.reveals.includes(p.index) ? "Hide explanation" : "See explanation", "reveal", "text-button")}</div>${p.hints.includes(p.index) ? `<div class="hint-box"><strong>A little nudge</strong><p>${esc(problem.hint)}</p></div>` : ""}${p.reveals.includes(p.index) ? `<div class="hint-box"><strong>Let’s work through it</strong><p>${esc(problem.solution)}</p><div class="solution-answer">Answer: ${math(problem.answer)}${problem.type === "percent" ? "%" : ""}</div><small>Read it through, then try entering the answer yourself.</small></div>` : ""}<div class="workspace-bottom">${button(icon("back") + "Previous", "previous-question", "btn btn-outline")}${p.index < l.problems.length - 1 ? button("Next problem " + icon("arrow"), "next-question", "btn btn-primary") : button((p.solved.length === l.problems.length ? "Lesson complete" : "Review my progress") + " " + icon("arrow"), "lesson-review", "btn btn-primary")}</div>`}</section></div>`;
 }
 function progressView() {
   const solved = solvedCount(),
     complete = completedCount();
-  return `<div class="page-heading"><span class="eyebrow muted">LOOK HOW FAR YOU’VE COME</span><h1>Progress, one step at a time<span class="purple-text">.</span></h1><p>There’s no deadline for understanding. Keep building at your own pace.</p></div><div class="stats-grid"><div><span class="stat-icon">${icon("check")}</span><b>${solved}<small> / 64</small></b><span>Problems solved</span></div><div><span class="stat-icon">${icon("book")}</span><b>${complete}<small> / 8</small></b><span>Lessons completed</span></div><div><span class="stat-icon">${icon("leaf")}</span><b>${Math.round((solved / 64) * 100)}<small>%</small></b><span>Foundation explored</span></div></div><div class="progress-lessons">${lessons
+  return `<div class="page-heading"><span class="eyebrow muted">LOOK HOW FAR YOU’VE COME</span><h1>Progress, one step at a time<span class="purple-text">.</span></h1><p>There’s no deadline for understanding. Keep building at your own pace.</p></div><div class="stats-grid"><div><span class="stat-icon">${icon("check")}</span><b>${solved}<small> / ${totalProblems}</small></b><span>Problems solved</span></div><div><span class="stat-icon">${icon("book")}</span><b>${complete}<small> / ${lessons.length}</small></b><span>Lessons completed</span></div><div><span class="stat-icon">${icon("leaf")}</span><b>${Math.round((solved / totalProblems) * 100)}<small>%</small></b><span>Foundation explored</span></div></div><div class="progress-lessons">${lessons
     .map((l) => {
       const p = getProgress(l.id),
         t = topics.find((t) => t.id === l.topic);
-      return `<article><span class="topic-icon ${t.color}">${icon(t.icon)}</span><div><small>${t.short}</small><h3>${l.title}</h3><div class="progress-track"><span style="width:${(p.solved.length / 8) * 100}%"></span></div></div><span>${p.solved.length}/8 solved</span>${button((p.solved.length === 8 ? "Revisit" : p.stage === "practice" ? "Continue" : "Start") + " " + icon("arrow"), `lesson:${l.id}`, "btn btn-outline")}</article>`;
+      return `<article><span class="topic-icon ${t.color}">${icon(t.icon)}</span><div><small>${t.short}</small><h3>${l.title}</h3><div class="progress-track"><span style="width:${(p.solved.length / l.problems.length) * 100}%"></span></div></div><span>${p.solved.length}/${l.problems.length} solved</span>${button((p.solved.length === l.problems.length ? "Revisit" : p.stage === "practice" ? "Continue" : "Start") + " " + icon("arrow"), `lesson:${l.id}`, "btn btn-outline")}</article>`;
     })
     .join(
       "",
@@ -301,8 +312,16 @@ function achievementsView() {
     ["First little leaf", count >= 1, "One new problem solved"],
     ["A growing habit", count >= 8, "Eight problems solved"],
     ["Lesson gardener", complete >= 1, "Your first complete lesson"],
-    ["Finding your stride", count >= 32, "Half the foundation complete"],
-    ["A flourishing foundation", count === 64, "All 64 problems solved"],
+    [
+      "Finding your stride",
+      count >= Math.ceil(totalProblems / 2),
+      "Half the foundation complete",
+    ],
+    [
+      "A flourishing foundation",
+      count === totalProblems,
+      `All ${totalProblems} problems solved`,
+    ],
   ];
   return `<section class="achievements"><div class="section-heading"><div><span class="eyebrow muted">YOUR EFFORT IS ADDING UP</span><h2>A little garden of wins</h2></div><span class="points-badge">${icon("leaf")} ${count * 10} leaf points</span></div><p>Earn 10 leaf points for each new problem solved. Revisit any problem freely; points are awarded once.</p><div class="achievement-grid">${badges.map(([name, earned, description]) => `<div class="achievement ${earned ? "earned" : ""}">${icon(earned ? "leaf" : "lock")}<strong>${name}</strong><span>${description}</span><small>${earned ? "Earned" : "Still growing"}</small></div>`).join("")}</div></section>`;
 }
@@ -526,7 +545,13 @@ function toast(text) {
 }
 function setQuestion(index) {
   const p = getProgress(state.lesson);
-  p.index = Math.max(0, Math.min(7, index));
+  p.index = Math.max(
+    0,
+    Math.min(
+      lessons.find((l) => l.id === state.lesson).problems.length - 1,
+      index,
+    ),
+  );
   p.stage = "practice";
   feedback = null;
   render();
@@ -555,8 +580,8 @@ function checkCurrent() {
     state.game.best = Math.max(Number(state.game.best) || 0, state.game.streak);
   } else if (!feedback.correct) state.game.streak = 0;
   render();
-  if (newlySolved && p.solved.length === 8)
-    toast("Eight small steps. One lesson complete!");
+  if (newlySolved && p.solved.length === l.problems.length)
+    toast("Lesson complete!");
   else {
     if (newlySolved) toast("+10 leaf points. Your understanding is growing!");
     document.querySelector("#answer")?.focus();
@@ -602,9 +627,11 @@ document.addEventListener("click", (e) => {
       lessons.find(
         (l) =>
           getProgress(l.id).stage === "practice" &&
-          getProgress(l.id).solved.length < 8,
+          getProgress(l.id).solved.length < l.problems.length,
       ) ||
-      lessons.find((l) => getProgress(l.id).solved.length < 8) ||
+      lessons.find(
+        (l) => getProgress(l.id).solved.length < l.problems.length,
+      ) ||
       lessons[0];
     openLesson(l.id);
   } else if (action === "open-tools") openTools();

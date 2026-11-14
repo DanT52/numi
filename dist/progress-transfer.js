@@ -1,4 +1,5 @@
 import { lessons } from "./lessons.js";
+import { migrateFractionProgress } from "./progress-migration.js";
 
 const MAX_SIZE = 200000;
 export function normalizeProgress(value) {
@@ -10,10 +11,11 @@ export function normalizeProgress(value) {
     Array.isArray(value.progress)
   )
     throw Error("This is not a valid Numi progress export.");
+  value = migrateFractionProgress(value);
   const progress = {};
-  const indices = (list) => {
+  const indices = (list, size) => {
     if (!Array.isArray(list)) throw Error("The progress data is incomplete.");
-    if (list.some((i) => !Number.isInteger(i) || i < 0 || i >= 8))
+    if (list.some((i) => !Number.isInteger(i) || i < 0 || i >= size))
       throw Error("The progress data contains an invalid problem number.");
     return [...new Set(list)];
   };
@@ -24,18 +26,27 @@ export function normalizeProgress(value) {
       throw Error("The saved answers are invalid.");
     const answers = {};
     for (const [k, v] of Object.entries(p.answers)) {
-      if (!/^[0-7]$/.test(k) || typeof v !== "string" || v.length > 500)
+      if (
+        !/^\d+$/.test(k) ||
+        Number(k) >= lesson.problems.length ||
+        typeof v !== "string" ||
+        v.length > 500
+      )
         throw Error("The saved answers are invalid.");
       answers[k] = v;
     }
     progress[lesson.id] = {
       index:
-        Number.isInteger(p.index) && p.index >= 0 && p.index < 8 ? p.index : 0,
+        Number.isInteger(p.index) &&
+        p.index >= 0 &&
+        p.index < lesson.problems.length
+          ? p.index
+          : 0,
       stage: p.stage === "practice" ? "practice" : "example",
-      solved: indices(p.solved),
+      solved: indices(p.solved, lesson.problems.length),
       answers,
-      hints: indices(p.hints || []),
-      reveals: indices(p.reveals || []),
+      hints: indices(p.hints || [], lesson.problems.length),
+      reveals: indices(p.reveals || [], lesson.problems.length),
     };
   }
   if (!Object.keys(progress).length)
