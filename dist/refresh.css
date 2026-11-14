@@ -427,12 +427,44 @@ footer {
   animation: happy-pop 0.4s ease-out;
 }
 .practice-equation {
-  overflow-wrap: anywhere;
+  overflow-x: auto;
+  overflow-y: hidden;
+  justify-content: safe center;
 }
 .practice-equation math {
   font-size: 2.2rem;
-  max-width: 100%;
-  overflow: auto;
+  max-width: none;
+  overflow: visible;
+  flex-shrink: 0;
+}
+.example-equation,
+.preview-equation {
+  overflow-x: auto;
+  overflow-y: hidden;
+  justify-content: safe center;
+}
+.example-equation math,
+.preview-equation math,
+.pinned-problem math {
+  overflow: visible;
+  max-width: none;
+  flex-shrink: 0;
+}
+.lesson-list-toggle {
+  margin: 12px 0 6px;
+  font-size: 0.8rem;
+}
+.lesson-list-toggle .icon {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.15s;
+}
+.lesson-list-toggle[aria-expanded="true"] .icon {
+  transform: rotate(-90deg);
+}
+.topic-card:has([data-action="lesson:fractions-simplify"])
+  .lesson-links[data-expanded="false"] {
+  grid-template-columns: 1fr;
 }
 .help-row .text-button {
   font-size: 0.8rem;
@@ -859,11 +891,12 @@ footer {
   padding: 17px 18px;
   margin: 12px 0 4px;
   overflow-x: auto;
+  overflow-y: hidden;
   color: var(--accent);
 }
 .step-equation math {
   font-size: 1.55rem;
-  max-width: 100%;
+  max-width: none;
   flex-shrink: 0;
 }
 .equation-equals {
@@ -1246,8 +1279,10 @@ footer {
   justify-content: center;
   gap: 10px;
   margin-top: 8px;
-  max-height: 90px;
-  overflow: auto;
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 8px;
 }
 .pinned-problem math {
   font-size: 1.5rem;

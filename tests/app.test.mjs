@@ -24,9 +24,23 @@ function mount() {
   globalThis.document = window.document;
 }
 function click(action) {
-  const el = Array.from(document.querySelectorAll("[data-action]")).find(
+  let el = Array.from(document.querySelectorAll("[data-action]")).find(
     (el) => el.dataset.action === action,
   );
+  if (!el && action.startsWith("lesson:")) {
+    const lesson = lessons.find((l) => l.id === action.slice(7));
+    const expand =
+      lesson &&
+      document.querySelector(
+        `[data-action="toggle-topic:${lesson.topic}"][aria-expanded="false"]`,
+      );
+    if (expand) {
+      click(`toggle-topic:${lesson.topic}`);
+      el = Array.from(document.querySelectorAll("[data-action]")).find(
+        (el) => el.dataset.action === action,
+      );
+    }
+  }
   assert.ok(el, "Action exists: " + action);
   assert.ok(!el.disabled, "Action is enabled: " + action);
   el.dispatchEvent(
@@ -65,8 +79,35 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
   await t.test("catalog has all lessons and future curriculum", () => {
     assert.equal(document.querySelectorAll(".topic-card").length, 4);
     assert.equal(
+      document.querySelectorAll("#lessons-fractions .lesson-link").length,
+      3,
+    );
+    assert.ok(
+      !document
+        .querySelector("#lessons-fractions")
+        .textContent.includes("Step 1 of 7"),
+    );
+    const before = JSON.stringify(persisted().progress);
+    click("toggle-topic:fractions");
+    assert.equal(
       document.querySelectorAll(".lesson-link").length,
       lessons.length,
+    );
+    assert.equal(
+      document
+        .querySelector('[data-action="toggle-topic:fractions"]')
+        .getAttribute("aria-expanded"),
+      "true",
+    );
+    click("toggle-topic:fractions");
+    assert.equal(
+      document.querySelectorAll("#lessons-fractions .lesson-link").length,
+      3,
+    );
+    assert.equal(
+      JSON.stringify(persisted().progress),
+      before,
+      "Expanding and collapsing does not change saved lesson progress",
     );
     assert.equal(document.querySelectorAll(".future-card").length, 2);
     assert.match(document.body.textContent, /To be added/);

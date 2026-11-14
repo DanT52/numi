@@ -1217,6 +1217,8 @@ footer .icon {
   font-family: Cambria, serif;
 }
 math {
+  overflow: visible;
+  max-height: none;
   font-family:
     Cambria Math,
     STIX Two Math,

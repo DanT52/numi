@@ -59,6 +59,7 @@ const icon = (name, cls = "") =>
 const button = (label, action, cls = "btn", extra = "") =>
   `<button class="${cls}" data-action="${action}" ${extra}>${label}</button>`;
 const STORE = "numi.progress.v1";
+const expandedTopics = new Set();
 function readState() {
   try {
     const s = JSON.parse(localStorage.getItem(STORE));
@@ -212,18 +213,20 @@ function home() {
 function topicCard(t) {
   const ls = lessons.filter((l) => l.topic === t.id),
     done = ls.reduce((s, l) => s + getProgress(l.id).solved.length, 0);
-  return `<article class="topic-card ${t.color}"><div class="topic-top"><span class="topic-icon">${icon(t.icon)}</span><span class="topic-tag">${t.tag}</span></div><h3>${t.title}</h3><p>${t.description}</p><div class="lesson-links">${ls
+  const expanded = expandedTopics.has(t.id),
+    visible = expanded ? ls : ls.slice(0, 3);
+  return `<article class="topic-card ${t.color}"><div class="topic-top"><span class="topic-icon">${icon(t.icon)}</span><span class="topic-tag">${t.tag}</span></div><h3>${t.title}</h3><p>${t.description}</p><div class="lesson-links" id="lessons-${t.id}" data-expanded="${expanded}">${visible
     .map((l, i) => {
       const p = getProgress(l.id);
       return button(
-        `<span class="lesson-number ${p.solved.length === l.problems.length ? "done" : ""}">${p.solved.length === l.problems.length ? "✓" : String(i + 1).padStart(2, "0")}</span><span><strong>${l.title}</strong><small>${l.sequence ? `Step ${l.sequence} of ${l.sequenceTotal} · ` : ""}${l.minutes} min <span>·</span> ${l.problems.length} problems${p.solved.length ? " · " + p.solved.length + "/" + l.problems.length : ""}</small></span>${icon("chevron")}`,
+        `<span class="lesson-number ${p.solved.length === l.problems.length ? "done" : ""}">${p.solved.length === l.problems.length ? "✓" : String(i + 1).padStart(2, "0")}</span><span><strong>${l.title}</strong><small>${l.minutes} min <span>·</span> ${l.problems.length} problems${p.solved.length ? " · " + p.solved.length + "/" + l.problems.length : ""}</small></span>${icon("chevron")}`,
         `lesson:${l.id}`,
         "lesson-link",
       );
     })
     .join(
       "",
-    )}</div><div class="card-bottom"><span>${ls.length} guided lessons</span><span>${done ? `${done}/${ls.reduce((n, l) => n + l.problems.length, 0)} solved` : "Beginner friendly"} ${done ? icon("check") : icon("leaf")}</span></div></article>`;
+    )}</div>${ls.length > 3 ? button((expanded ? "Show fewer lessons" : `Show all ${ls.length} lessons`) + icon("chevron"), `toggle-topic:${t.id}`, "text-button lesson-list-toggle", `aria-expanded="${expanded}" aria-controls="lessons-${t.id}"`) : ""}<div class="card-bottom"><span>${ls.length} guided lessons</span><span>${done ? `${done}/${ls.reduce((n, l) => n + l.problems.length, 0)} solved` : "Beginner friendly"} ${done ? icon("check") : icon("leaf")}</span></div></article>`;
 }
 function comingSoon() {
   return `<section class="coming-soon"><div class="section-heading"><div><span class="eyebrow muted">GROW FROM HERE</span><h2>More to look forward to</h2><p>A strong foundation opens up a whole new world.</p></div><span class="badge">${icon("lock")} To be added</span></div><div class="future-grid">${upcoming.map((group, i) => `<article class="future-card"><div class="future-number">0${i + 2}</div><div><h3>${group.title}</h3><p>${i ? "From your first variable to the coordinate plane." : "Connect everyday questions to everyday math."}</p><details><summary>See ${group.items.length} upcoming topics ${icon("chevron")}</summary><ul>${group.items.map(([name, desc]) => `<li><strong>${name}</strong><span>${desc}</span></li>`).join("")}</ul></details></div></article>`).join("")}</div></section>`;
@@ -618,6 +621,12 @@ document.addEventListener("click", (e) => {
   else if (action === "filter") {
     state.topic = value;
     render();
+  } else if (action === "toggle-topic") {
+    expandedTopics.has(value)
+      ? expandedTopics.delete(value)
+      : expandedTopics.add(value);
+    render();
+    document.querySelector(`[data-action="toggle-topic:${value}"]`)?.focus();
   } else if (action === "lesson") openLesson(value);
   else if (action === "all-lessons") {
     state.lesson = null;
