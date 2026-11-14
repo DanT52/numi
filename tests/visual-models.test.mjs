@@ -47,6 +47,43 @@ test("large line steps avoid overflowing intermediate calculations", () => {
   assert.equal(lineModel({ a: 1e308, b: 2, op: "*", step: null }).result, null);
   assert.equal(lineModel({ a: 12, b: 0, op: "/", step: null }).result, null);
 });
+test("chained operations reveal only after walking all tick-sized moves", () => {
+  const lab = {
+    a: -3,
+    op: "+",
+    b: 5,
+    operations: [
+      { op: "*", value: 4 },
+      { op: "-", value: 3 },
+    ],
+    step: 0,
+  };
+  let model = lineModel(lab);
+  assert.equal(model.complete, false);
+  assert.equal(model.end, -3);
+  assert.equal(model.result, 5);
+  assert.equal(model.axis.tick, 1);
+  model = lineModel({ ...lab, step: 5 });
+  assert.equal(model.end, 2);
+  assert.equal(model.complete, false);
+  model = lineModel({ ...lab, step: null });
+  assert.equal(model.end, 5);
+  assert.equal(model.complete, true);
+  const big = lineModel({ a: -12500, op: "+", b: 30000, step: 1 });
+  assert.equal(big.axis.tick, 5000);
+  assert.equal(big.end, -7500);
+  assert.equal(big.total, 6);
+});
+test("short final moves and no-op operations still require a step", () => {
+  const lab = { a: 0, op: "+", b: 2.5, step: 2 };
+  assert.equal(lineModel(lab).end, 2);
+  assert.equal(lineModel(lab).complete, false);
+  const final = lineModel({ ...lab, step: 3 });
+  assert.equal(final.end, 2.5);
+  assert.equal(final.complete, true);
+  assert.equal(lineModel({ a: 5, op: "+", b: 0, step: 0 }).complete, false);
+  assert.equal(lineModel({ a: 5, op: "+", b: 0, step: 1 }).complete, true);
+});
 test("fraction models retain all pieces and compact very large wholes", () => {
   const small = fractionModel(33, 75);
   assert.equal(small.rows[0].shaded, 33);

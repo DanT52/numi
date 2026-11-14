@@ -36,29 +36,85 @@ export function tickLabel(value) {
   return sign + Number(abs.toPrecision(5));
 }
 
-export function lineModel({ a, b, op, step: current }) {
-  const raw =
-    op === "+"
-      ? a + b
-      : op === "-"
-        ? a - b
-        : op === "*"
-          ? a * b
-          : b === 0
-            ? NaN
-            : a / b;
-  const result = Number.isFinite(raw) ? raw : null;
-  const start = ["+", "-"].includes(op) ? a : 0;
-  const total = op === "/" ? 1 : Math.abs(b);
-  const step = current === null ? total : Math.min(total, current);
-  const delta = result === null ? 0 : result - start;
-  const end =
-    result === null
-      ? start
-      : step === total
-        ? result
-        : start + (total ? (step / total) * delta : 0);
-  return { result, start, total, step, delta, end };
+export function lineOperations(lab) {
+  return [{ op: lab.op, value: lab.b }, ...(lab.operations || [])];
+}
+
+export function lineModel(lab) {
+  const operations = lineOperations(lab),
+    segments = [];
+  let value = lab.a,
+    error = null;
+  for (const operation of operations) {
+    const from = value,
+      b = operation.value;
+    const to =
+      operation.op === "+"
+        ? from + b
+        : operation.op === "-"
+          ? from - b
+          : operation.op === "*"
+            ? from * b
+            : b === 0
+              ? NaN
+              : from / b;
+    if (!Number.isFinite(to)) {
+      error =
+        operation.op === "/" && b === 0
+          ? "Division by zero is undefined."
+          : "This result exceeds the numeric range.";
+      break;
+    }
+    segments.push({ ...operation, from, to });
+    value = to;
+  }
+  const result = error ? null : value;
+  const axis = numberLineScale(lab.a, ...segments.map((s) => s.to));
+  let total = 0;
+  for (const segment of segments) {
+    const distanceInTicks = Math.abs(
+      segment.to / axis.tick - segment.from / axis.tick,
+    );
+    segment.steps = Math.max(1, Math.ceil(distanceInTicks - 1e-12));
+    segment.startStep = total;
+    total += segment.steps;
+    segment.endStep = total;
+  }
+  const step =
+    lab.step === null
+      ? total
+      : Math.min(total, Math.max(0, Math.floor(lab.step || 0)));
+  const complete = !error && step === total && total > 0;
+  let end = lab.a;
+  for (const segment of segments) {
+    segment.walked = Math.max(
+      0,
+      Math.min(segment.steps, step - segment.startStep),
+    );
+    segment.complete = segment.walked === segment.steps;
+    if (segment.walked === 0) segment.current = segment.from;
+    else if (segment.complete) segment.current = segment.to;
+    else
+      segment.current =
+        (segment.from / axis.tick +
+          Math.sign(segment.to - segment.from) * segment.walked) *
+        axis.tick;
+    if (segment.walked > 0) end = segment.current;
+  }
+  const activeIndex = segments.findIndex((s) => step < s.endStep);
+  return {
+    result,
+    start: lab.a,
+    end,
+    total,
+    step,
+    complete,
+    segments,
+    axis,
+    error,
+    activeIndex:
+      activeIndex === -1 ? Math.max(0, segments.length - 1) : activeIndex,
+  };
 }
 
 export function fractionModel(numerator, denominator) {

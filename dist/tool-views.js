@@ -7,62 +7,206 @@ import {
 } from "./visual-models.js";
 
 export function numberLineView(lab, { field, button, icon, toolTitle }) {
-  const { a, b, op } = lab,
-    { result, start, end, total, step, delta } = lineModel(lab);
-  const { x, ticks, tick } = numberLineScale(a, result, start);
-  const sx = x(start),
-    ex = x(end),
-    direction = delta < 0 ? "left" : "right";
-  const invalid = result === null;
-  const title = invalid
-    ? b === 0 && op === "/"
-      ? "Division by zero is undefined."
-      : "This result exceeds the numeric range."
-    : ["+", "-"].includes(op)
-      ? `Start at ${pretty(a)}. Move ${pretty(Math.abs(b))} ${direction}.`
-      : op === "*"
-        ? `${pretty(Math.abs(b))} jumps of ${pretty(a * Math.sign(b))}.`
-        : "Division asks how many fit.";
-  const explanation = invalid
-    ? "Change an input to continue exploring."
-    : op === "-"
-      ? `Subtracting ${b < 0 ? "a negative adds its opposite, so move right." : "a positive moves left."}`
-      : op === "+"
-        ? `Adding ${b < 0 ? "a negative moves left." : "a positive moves right."}`
-        : op === "*"
-          ? `Start at zero. ${b < 0 ? "A negative multiplier reverses each jump. " : ""}Equal signs give a positive product; different signs give a negative product.`
-          : "The arrow shows the quotient. Equal signs give a positive quotient; different signs give a negative quotient.";
-  return `${toolTitle("Meet the number line", "Small numbers or big ones: the line resizes around what you enter.")}
-  <div class="tool-inputs line-inputs">${field("Start with", "a", a, null, null, "any")}
-   <label class="number-field operation-field"><span>Operation</span><select data-lab="op" aria-label="Operation">${[
-     ["+", "+ Add"],
-     ["-", "− Subtract"],
-     ["*", "× Multiply"],
-     ["/", "÷ Divide"],
-   ]
-     .map(
-       ([v, l]) =>
-         `<option value="${v}" ${op === v ? "selected" : ""}>${l}</option>`,
-     )
-     .join("")}</select></label>
-   ${field("Then use", "b", b, null, null, "any")}<span class="operation-equals">=</span><output class="result-pill" aria-live="polite">${invalid ? "undefined" : pretty(result)}</output>
-  </div>
-  <div class="number-line-stage"><div class="line-legend"><span><i class="start-dot"></i> Start: ${pretty(start)}</span><span><i class="end-dot"></i> ${step === total ? "Result" : "Current"}: ${pretty(end)}</span></div>
-   <svg class="interactive-line" viewBox="0 0 800 215" role="img" aria-label="${esc(`${a} ${op} ${b} equals ${invalid ? "undefined" : result}. Start at ${start}, move ${direction} to ${end}.`)}">
-    <defs><marker id="line-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 6 3 0 6" fill="none" stroke="var(--accent)" stroke-width="1.6"/></marker></defs>
-    <path d="M400 35v130" stroke="var(--border)" stroke-dasharray="4 4"/>
-    <path d="M30 137H770m-735-4-5 4 5 4m730-8 5 4-5 4" stroke="var(--muted)" stroke-width="2" fill="none"/>
-    ${ticks.map((n) => `<path d="M${x(n)} 132v10" stroke="var(--muted)"/><text x="${x(n)}" y="169" text-anchor="middle" font-size="${tickLabel(n).length > 5 ? 20 : 24}" fill="var(--ink)" font-family="sans-serif">${tickLabel(n)}</text>`).join("")}
-    ${!invalid && end !== start ? `<path d="M${sx} 124Q${(sx + ex) / 2} ${Math.max(5, 85 - Math.abs(ex - sx) * 0.15)} ${ex} 124" fill="none" stroke="var(--accent)" stroke-width="3" marker-end="url(#line-arrow)"/>` : ""}
-    <circle cx="${sx}" cy="137" r="8" fill="var(--accent-soft)" stroke="var(--surface)" stroke-width="3"/>
-    <circle cx="${ex}" cy="137" r="8" fill="var(--accent)" stroke="var(--surface)" stroke-width="3"/>
-   </svg>
-   <div class="line-position" aria-live="polite">${step === total ? "Land on" : "You’re at"} <strong>${pretty(end)}</strong></div>
-   <div class="line-step-controls">${button(icon("back") + "Start again", "line-reset", "btn btn-small btn-outline")}${button("Take a step " + icon("arrow"), "line-step", "btn btn-small btn-primary", step >= total || invalid ? "disabled" : "")}${button("Show result", "line-finish", "btn btn-small btn-outline", invalid ? "disabled" : "")}<span>${pretty(step)} / ${pretty(total)} ${op === "*" ? "jumps" : "steps"}</span></div>
-   <p class="scale-note">Each tick represents ${pretty(tick)}. The start and result markers keep their exact position between ticks.</p>
-  </div>
-  <div class="visual-explanation">${icon("info")}<div><strong>${title}</strong><p>${explanation}</p></div></div>
-  <div class="try-presets"><span>Try a starting point</span>${button("−3 + 5", "preset:-3,5,+", "preset")}${button("4 − (−3)", "preset:4,-3,-", "preset")}${button("−12,500 + 30,000", "preset:-12500,30000,+", "preset")}</div>`;
+  const model = lineModel(lab),
+    {
+      result,
+      start,
+      end,
+      step,
+      total,
+      complete,
+      segments,
+      error,
+      activeIndex,
+    } = model;
+  const { x, ticks, tick } = model.axis;
+  const operations = [{ op: lab.op, value: lab.b }, ...(lab.operations || [])];
+  const operators = [
+    ["+", "+ Add"],
+    ["-", "− Subtract"],
+    ["*", "× Multiply"],
+    ["/", "÷ Divide"],
+  ];
+  const operationRow = (operation, index) => {
+    const segment = segments[index],
+      done = segment?.complete;
+    return (
+      '<div class="line-operation ' +
+      (done
+        ? "operation-done"
+        : !complete && index === activeIndex
+          ? "operation-active"
+          : "") +
+      '">' +
+      '<span class="operation-index" aria-label="Operation ' +
+      (index + 1) +
+      '">' +
+      (done ? "✓" : index + 1) +
+      "</span>" +
+      '<label class="number-field"><span>Operation</span><select ' +
+      (index === 0
+        ? 'data-lab="op"'
+        : 'data-line-index="' + index + '" data-line-field="op"') +
+      ' aria-label="Operation ' +
+      (index + 1) +
+      '">' +
+      operators
+        .map(
+          ([v, label]) =>
+            '<option value="' +
+            v +
+            '" ' +
+            (operation.op === v ? "selected" : "") +
+            ">" +
+            label +
+            "</option>",
+        )
+        .join("") +
+      "</select></label>" +
+      (index === 0
+        ? field("Number", "b", operation.value, null, null, "any")
+        : '<label class="number-field"><span>Number</span><input type="number" step="any" data-line-index="' +
+          index +
+          '" data-line-field="value" aria-label="Number for operation ' +
+          (index + 1) +
+          '" value="' +
+          operation.value +
+          '"></label>') +
+      (done
+        ? '<output class="operation-answer">= ' +
+          pretty(segment.to) +
+          "</output>"
+        : "") +
+      (operations.length > 1
+        ? button(
+            icon("close"),
+            "line-remove:" + index,
+            "icon-button",
+            'aria-label="Remove operation ' + (index + 1) + '"',
+          )
+        : "") +
+      "</div>"
+    );
+  };
+  const arcs = segments
+    .filter((s) => s.walked > 0)
+    .map((s, index) => {
+      const sx = x(s.from),
+        ex = x(s.current);
+      if (sx === ex) return "";
+      return (
+        '<path class="operation-arc" data-operation="' +
+        index +
+        '" d="M' +
+        sx +
+        " 124Q" +
+        (sx + ex) / 2 +
+        " " +
+        (20 + (index % 3) * 20) +
+        " " +
+        ex +
+        ' 124" fill="none" stroke="var(--accent)" stroke-width="3" opacity="' +
+        (index === activeIndex || complete ? 0.9 : 0.4) +
+        '" marker-end="url(#line-arrow)"/>'
+      );
+    })
+    .join("");
+  return (
+    toolTitle("Number line", "Operations run in the order listed below.") +
+    '<div class="line-start">' +
+    field("Starting number", "a", lab.a, null, null, "any") +
+    '<div class="line-final"><span>Final result</span><output class="result-pill" aria-live="polite">' +
+    (error ? "undefined" : complete ? pretty(result) : "?") +
+    "</output></div></div>" +
+    '<div class="line-operations">' +
+    operations.map(operationRow).join("") +
+    "</div>" +
+    '<div class="line-add-row">' +
+    button("+ Add operation", "line-add", "btn btn-small btn-outline") +
+    "</div>" +
+    (error
+      ? '<div class="feedback retry" role="status">' + esc(error) + "</div>"
+      : "") +
+    '<div class="number-line-stage"><div class="line-legend"><span><i class="start-dot"></i> Start: ' +
+    pretty(start) +
+    '</span><span><i class="end-dot"></i> ' +
+    (complete ? "Result" : "Current position") +
+    ": " +
+    pretty(end) +
+    "</span></div>" +
+    '<svg class="interactive-line" viewBox="0 0 800 215" role="img" aria-label="' +
+    esc(
+      "Current position " +
+        pretty(end) +
+        ". " +
+        step +
+        " of " +
+        total +
+        " steps. " +
+        (complete
+          ? "Final result " + pretty(result) + "."
+          : "Final result hidden."),
+    ) +
+    '">' +
+    '<defs><marker id="line-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 6 3 0 6" fill="none" stroke="var(--accent)" stroke-width="1.6"/></marker></defs>' +
+    '<path d="M400 35v130" stroke="var(--border)" stroke-dasharray="4 4"/><path d="M30 137H770m-735-4-5 4 5 4m730-8 5 4-5 4" stroke="var(--muted)" stroke-width="2" fill="none"/>' +
+    ticks
+      .map(
+        (n) =>
+          '<path d="M' +
+          x(n) +
+          ' 132v10" stroke="var(--muted)"/><text x="' +
+          x(n) +
+          '" y="175" text-anchor="middle" font-size="' +
+          (tickLabel(n).length > 5 ? 20 : 24) +
+          '" fill="var(--ink)" font-family="sans-serif">' +
+          tickLabel(n) +
+          "</text>",
+      )
+      .join("") +
+    arcs +
+    '<circle cx="' +
+    x(start) +
+    '" cy="137" r="8" fill="var(--accent-soft)" stroke="var(--surface)" stroke-width="3"/><circle cx="' +
+    x(end) +
+    '" cy="137" r="8" fill="var(--accent)" stroke="var(--surface)" stroke-width="3"/></svg>' +
+    '<div class="line-position" aria-live="polite">' +
+    (complete ? "Result" : "Current position") +
+    " <strong>" +
+    pretty(end) +
+    "</strong></div>" +
+    '<div class="line-step-controls">' +
+    button(
+      icon("back") + "Start again",
+      "line-reset",
+      "btn btn-small btn-outline",
+    ) +
+    button(
+      "Take a step " + icon("arrow"),
+      "line-step",
+      "btn btn-small btn-primary",
+      complete || error ? "disabled" : "",
+    ) +
+    button(
+      "Show result",
+      "line-finish",
+      "btn btn-small btn-outline",
+      complete || error ? "disabled" : "",
+    ) +
+    "<span>" +
+    step +
+    " / " +
+    total +
+    " steps</span></div>" +
+    '<p class="scale-note">One step = one tick (' +
+    pretty(tick) +
+    "). A final shorter step lands exactly on the next value.</p></div>" +
+    '<div class="try-presets"><span>Examples</span>' +
+    button("−3 + 5", "preset:-3,5,+", "preset") +
+    button("4 − (−3)", "preset:4,-3,-", "preset") +
+    button("−12,500 + 30,000", "preset:-12500,30000,+", "preset") +
+    "</div>"
+  );
 }
 
 export function fractionView(lab, { field, button, icon, toolTitle }) {
@@ -73,7 +217,7 @@ export function fractionView(lab, { field, button, icon, toolTitle }) {
     num,
     Math.min(Number.MAX_SAFE_INTEGER, den * 2),
   );
-  return `${toolTitle("A whole new way to see fractions", "Try 33/75, a mixed number, or a fraction with thousands of pieces.")}
+  return `${toolTitle("Fraction bars", "Try 33/75, a mixed number, or a fraction with thousands of pieces.")}
   <div class="tool-inputs fraction-inputs">${field("Pieces to shade", "num", num, 0, Number.MAX_SAFE_INTEGER)}<span class="fraction-slash">/</span>${field("Pieces per whole", "den", den, 1, Number.MAX_SAFE_INTEGER)}<div class="fraction-values">${math(`${num}/${den}`)}<span>= ${pretty(num / den)} = ${pretty((num / den) * 100)}%</span></div></div>
   <div class="fraction-stage ${den > 15 ? "many-pieces" : ""}">${rows
     .map(

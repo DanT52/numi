@@ -74,7 +74,8 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
   await t.test("worked example opens before practice", () => {
     click("lesson:integers-1");
     assert.match(document.body.textContent, /Start with an example/);
-    assert.equal(document.querySelectorAll(".example-steps li").length, 3);
+    assert.ok(document.querySelectorAll(".example-steps li").length >= 3);
+    assert.ok(document.querySelector(".step-equation math"));
     click("begin-practice");
     assert.ok(document.querySelector("#answer"));
   });
@@ -148,7 +149,12 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
     click("view:lab");
     click("tool:line");
     click("preset:4,-3,-");
-    assert.equal(document.querySelector(".result-pill").textContent, "7");
+    assert.equal(document.querySelector(".result-pill").textContent, "?");
+    assert.match(
+      document.querySelector(".interactive-line").getAttribute("aria-label"),
+      /Final result hidden/,
+    );
+    assert.equal(document.querySelectorAll(".operation-answer").length, 0);
     click("line-reset");
     assert.match(
       document.querySelector(".line-step-controls").textContent,
@@ -159,9 +165,19 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       document.querySelector(".line-step-controls").textContent,
       /1 \/ 3/,
     );
+    assert.equal(
+      document.querySelector(".line-position strong").textContent,
+      "5",
+    );
+    assert.equal(document.querySelector(".result-pill").textContent, "?");
+    click("line-step");
+    click("line-step");
+    assert.equal(document.querySelector(".result-pill").textContent, "7");
     change("a", -2);
     change("b", -3);
     change("op", "*");
+    assert.equal(document.querySelector(".result-pill").textContent, "?");
+    click("line-finish");
     assert.equal(document.querySelector(".result-pill").textContent, "6");
     change("op", "/");
     change("b", 0);
@@ -170,8 +186,71 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       "undefined",
     );
     change("b", 2);
+    assert.equal(document.querySelector(".result-pill").textContent, "?");
+    click("line-finish");
     assert.equal(document.querySelector(".result-pill").textContent, "−1");
   });
+  await t.test(
+    "number line supports chained operations and tick-sized steps",
+    () => {
+      click("preset:-3,5,+");
+      click("line-add");
+      function extra(field, value) {
+        const input = document.querySelector(
+          `[data-line-index="1"][data-line-field="${field}"]`,
+        );
+        if (input.tagName === "SELECT")
+          for (const option of input.options)
+            option.value === value
+              ? option.setAttribute("selected", "")
+              : option.removeAttribute("selected");
+        else input.value = String(value);
+        input.dispatchEvent(new window.Event("change", { bubbles: true }));
+      }
+      extra("op", "*");
+      extra("value", 4);
+      assert.equal(document.querySelectorAll(".line-operation").length, 2);
+      assert.equal(document.querySelector(".result-pill").textContent, "?");
+      for (let i = 0; i < 5; i++) click("line-step");
+      assert.equal(
+        document.querySelector(".line-position strong").textContent,
+        "2",
+      );
+      assert.equal(
+        document.querySelector(".result-pill").textContent,
+        "?",
+        "Intermediate result does not reveal final answer",
+      );
+      assert.equal(document.querySelectorAll(".operation-answer").length, 1);
+      click("line-finish");
+      assert.equal(document.querySelector(".result-pill").textContent, "8");
+      click("line-remove:1");
+      assert.equal(document.querySelectorAll(".line-operation").length, 1);
+      assert.equal(document.querySelector(".result-pill").textContent, "?");
+      click("preset:-12500,30000,+");
+      click("line-step");
+      assert.equal(
+        document.querySelector(".line-position strong").textContent,
+        "−7500",
+        "Large inputs move by the 5000-unit tick",
+      );
+      assert.equal(document.querySelector(".result-pill").textContent, "?");
+      click("line-finish");
+      assert.equal(document.querySelector(".result-pill").textContent, "17500");
+      type('[data-lab="b"]', "20000");
+      assert.equal(
+        document.querySelector(".result-pill").textContent,
+        "?",
+        "Editing an already revealed result masks it immediately",
+      );
+      click("line-finish");
+      assert.equal(
+        document.querySelector(".result-pill").textContent,
+        "7500",
+        "Step controls commit the typed input without requiring a separate blur",
+      );
+    },
+  );
   await t.test(
     "fraction, percentage, and factor aids respond to inputs",
     () => {
@@ -276,6 +355,8 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       change("a", -1000000000);
       change("b", 2500000000);
       change("op", "+");
+      assert.equal(document.querySelector(".result-pill").textContent, "?");
+      click("line-finish");
       assert.equal(
         document.querySelector(".result-pill").textContent,
         "1500000000",
@@ -344,6 +425,61 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
         "Existing locally saved lessons survive the upgrade and reload",
       );
       assert.equal(document.documentElement.dataset.theme, "matcha");
+    },
+  );
+  await t.test(
+    "fraction guide shows equivalent fractions for all four operations and mixed numbers",
+    () => {
+      click("home");
+      click("lesson:fractions-1");
+      click("example");
+      assert.ok(document.querySelectorAll(".step-equation mfrac").length >= 20);
+      assert.equal(
+        document.querySelectorAll(".more-examples details").length,
+        4,
+      );
+      assert.match(
+        document.querySelector(".example-steps").textContent,
+        /numerator and denominator by 3/,
+      );
+      assert.ok(!document.body.textContent.includes("LESS ABSTRACT"));
+    },
+  );
+  await t.test(
+    "Settings exports progress codes and restores them on a new device",
+    async () => {
+      click("view:settings");
+      click("generate-progress-code");
+      const code = document.querySelector("#progress-code-output").value;
+      assert.match(code, /^NUMI1\./);
+      assert.ok(
+        document.querySelector("#import-progress"),
+        "File import is also available in Settings",
+      );
+      const previous = JSON.stringify(persisted().progress);
+      type("#progress-code-input", "NUMI1.invalid.bad");
+      click("import-progress-code");
+      assert.equal(
+        JSON.stringify(persisted().progress),
+        previous,
+        "Invalid code leaves progress untouched",
+      );
+      stored.delete("numi.progress.v1");
+      mount();
+      await import("../dist/app.js?fresh-device");
+      click("view:settings");
+      type("#progress-code-input", code);
+      click("import-progress-code");
+      assert.equal(
+        lessons.filter((l) => persisted().progress[l.id].solved.length === 8)
+          .length,
+        8,
+      );
+      assert.match(
+        document.querySelector(".transfer-status").textContent,
+        /imported and saved/,
+      );
+      assert.equal(persisted().progress["fractions-1"].answers[4], "3 3/4");
     },
   );
 });

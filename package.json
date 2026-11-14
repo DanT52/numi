@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node server.mjs",
     "start": "node server.mjs",
-    "test": "node --test tests/math.test.mjs tests/app.test.mjs tests/visual-models.test.mjs"
+    "test": "node --test tests/math.test.mjs tests/app.test.mjs tests/visual-models.test.mjs tests/progress-transfer.test.mjs"
   },
   "devDependencies": {
     "linkedom": "0.18.12"

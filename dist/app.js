@@ -6,7 +6,14 @@ import {
   checkAnswer,
 } from "./math.js";
 import { topics, lessons, upcoming } from "./lessons.js";
-import { lineModel } from "./visual-models.js";
+import { workedExamples, fractionExamples } from "./worked-examples.js";
+import {
+  exportProgressCode,
+  importProgressCode,
+  normalizeProgress,
+  mergeProgress,
+} from "./progress-transfer.js";
+import { lineOperations, lineModel } from "./visual-models.js";
 import { numberLineView, fractionView } from "./tool-views.js";
 import {
   loadAppearance,
@@ -85,11 +92,15 @@ function save() {
 let tool = "line",
   overlay = false,
   feedback = null;
+let transferCode = "",
+  transferDraft = "",
+  transferStatus = "";
 let lab = {
   a: -3,
   b: 5,
   op: "+",
-  step: null,
+  step: 0,
+  operations: [],
   pos: 5,
   neg: 3,
   num: 3,
@@ -119,11 +130,11 @@ function companionCard() {
       : "neutral";
   const message = feedback
     ? feedback.correct
-      ? "A little win. A stronger you!"
-      : "A tricky one? We’ll work through it together."
+      ? "Correct."
+      : "Try again. The hint can help."
     : p?.stage === "practice"
-      ? "Take your time. I’m rooting for you."
-      : "Let’s try one together.";
+      ? "Solve the problem below."
+      : "Follow the worked example.";
   return `<div class="lesson-companion" aria-live="polite">${companionImage(mood, "", `Your study companion looks ${mood === "sad" ? "thoughtful" : mood}`)}<div><strong>${message}</strong><span>${solvedCount() * 10} leaf points${state.game.streak > 1 ? ` · ${state.game.streak} new answers in a row` : " · Every new answer grows your garden"}</span></div></div>`;
 }
 const getProgress = (id) => {
@@ -176,11 +187,11 @@ function header() {
     )}</nav><div class="header-right"><span class="saved-label">${icon("check")} ${storageFailed ? "Progress stays in this tab" : "Saved on this device"}</span>${button(icon("calculator") + "<span>Quick tools</span>", "open-tools", "btn btn-small btn-outline")}<span class="header-companion">${companionImage("matcha", "", "Your study companion")}</span></div></div></header>`;
 }
 function heroArt() {
-  return `<div class="hero-art"><div class="companion-welcome">${companionImage("matcha", "", "Your companion is ready with a cup of matcha")}<div class="companion-bubble">A little practice.<br>A little growth. <span>✦</span></div></div><div class="hero-equation" aria-label="Negative three plus five equals two">${math("-3+5")}<span>=</span><b>2</b></div><div class="garden-points">${icon("leaf")} ${solvedCount() * 10} leaf points earned <span>·</span> ${completedCount()} lessons complete</div></div>`;
+  return `<div class="hero-art"><div class="companion-welcome">${companionImage("matcha", "", "Your companion is ready with a cup of matcha")}</div><div class="hero-equation" aria-label="Negative three plus five equals two">${math("-3+5")}<span>=</span><b>2</b></div><div class="garden-points">${icon("leaf")} ${solvedCount() * 10} leaf points earned <span>·</span> ${completedCount()} lessons complete</div></div>`;
 }
 function home() {
   const count = solvedCount();
-  return `<section class="hero"><div class="hero-copy"><div class="eyebrow"><span class="tiny-star">✦</span> YOUR MATH JOURNEY STARTS HERE</div><h1>Big ideas.<br>Small, confident steps<span class="purple-text">.</span></h1><p>Math makes more sense when you can see it.<br>Explore, practice, and learn at your own pace.</p>${button((count ? "Keep learning" : "Let’s start learning") + icon("arrow"), "start-recommended", "btn btn-primary")}<span class="hero-note">No rush. No pressure. Just progress.</span></div>${heroArt()}</section><div class="dashboard-grid"><section class="lesson-catalog"><div class="section-heading"><div><span class="eyebrow muted">BUILD YOUR FOUNDATION</span><h2>A little practice goes a long way</h2></div><span class="count-badge">8 lessons</span></div><div class="filter-row" aria-label="Filter lessons">${[["all", "All topics"], ...topics.map((t) => [t.id, t.short])].map(([id, label]) => button(label, `filter:${id}`, `filter ${state.topic === id ? "selected" : ""}`, 'aria-pressed="' + (state.topic === id) + '"')).join("")}</div><div class="topic-grid">${topics
+  return `<section class="hero"><div class="hero-copy"><div class="eyebrow"><span class="tiny-star">✦</span> BEGINNER MATH</div><h1>Learn math,<br>step by step.</h1><p>Guided lessons and visual tools for foundational math.</p>${button((count ? "Keep learning" : "Let’s start learning") + icon("arrow"), "start-recommended", "btn btn-primary")}</div>${heroArt()}</section><div class="dashboard-grid"><section class="lesson-catalog"><div class="section-heading"><div><span class="eyebrow muted">BUILD YOUR FOUNDATION</span><h2>Lessons</h2></div><span class="count-badge">8 lessons</span></div><div class="filter-row" aria-label="Filter lessons">${[["all", "All topics"], ...topics.map((t) => [t.id, t.short])].map(([id, label]) => button(label, `filter:${id}`, `filter ${state.topic === id ? "selected" : ""}`, 'aria-pressed="' + (state.topic === id) + '"')).join("")}</div><div class="topic-grid">${topics
     .filter((t) => state.topic === "all" || state.topic === t.id)
     .map(topicCard)
     .join(
@@ -194,7 +205,7 @@ function home() {
     })
     .join(
       "",
-    )}</div><div class="gentle-note">${icon("spark")} Understanding beats memorizing.</div></div><div class="lab-teaser"><span class="teaser-icon">${icon("lab")}</span><h3>Sometimes, you need to see it.</h3><p>Turn abstract ideas into something you can move, count, and explore.</p>${button("Explore the visual lab " + icon("arrow"), "view:lab", "text-button")}</div></aside></div>${comingSoon()}<footer><span class="footer-brand">numi.</span><span>Built for curious minds. At every starting point.</span><span>${icon("check")} Your pace. Your progress.</span></footer>`;
+    )}</div></div><div class="lab-teaser"><span class="teaser-icon">${icon("lab")}</span><h3>Visual tools</h3><p>Number lines, signed counters, fraction bars, and a calculator.</p>${button("Explore the visual lab " + icon("arrow"), "view:lab", "text-button")}</div></aside></div>${comingSoon()}<footer><span class="footer-brand">numi.</span><span>Built for curious minds. At every starting point.</span><span>${icon("check")} Your pace. Your progress.</span></footer>`;
 }
 function topicCard(t) {
   const ls = lessons.filter((l) => l.topic === t.id),
@@ -216,6 +227,39 @@ function comingSoon() {
   return `<section class="coming-soon"><div class="section-heading"><div><span class="eyebrow muted">GROW FROM HERE</span><h2>More to look forward to</h2><p>A strong foundation opens up a whole new world.</p></div><span class="badge">${icon("lock")} To be added</span></div><div class="future-grid">${upcoming.map((group, i) => `<article class="future-card"><div class="future-number">0${i + 2}</div><div><h3>${group.title}</h3><p>${i ? "From your first variable to the coordinate plane." : "Connect everyday questions to everyday math."}</p><details><summary>See ${group.items.length} upcoming topics ${icon("chevron")}</summary><ul>${group.items.map(([name, desc]) => `<li><strong>${name}</strong><span>${desc}</span></li>`).join("")}</ul></details></div></article>`).join("")}</div></section>`;
 }
 
+function exampleSteps(example) {
+  return example.steps
+    .map((step, index) => {
+      const item = typeof step === "string" ? { text: step, lines: [] } : step;
+      return `<li><span>${index + 1}</span><div class="example-step-body"><p>${esc(item.text)}</p>${(item.lines || []).map((line) => `<div class="step-equation" role="math" aria-label="${esc(line.join(" equals "))}">${line.map((expression, i) => (i ? '<span class="equation-equals">=</span>' : "") + math(expression)).join("")}</div>`).join("")}</div></li>`;
+    })
+    .join("");
+}
+function moreFractionExamples() {
+  return `<section class="more-examples"><h2>More fraction operations</h2>${fractionExamples.map((example) => `<details><summary>${esc(example.title)}${icon("chevron")}</summary><div class="example-equation">${math(example.expr)}</div><ol class="example-steps">${exampleSteps(example)}</ol></details>`).join("")}</section>`;
+}
+function progressTransferUI() {
+  return `<section class="progress-transfer" aria-labelledby="transfer-title"><h2 id="transfer-title">Transfer progress</h2><p>Export a code on this device. On another device, paste it below to import your answers and lesson progress. Existing solved problems are kept.</p><div class="transfer-actions">${button("Export progress code", "generate-progress-code", "btn btn-primary")}${button("Download progress file", "export-progress", "btn btn-outline")}</div>${transferCode ? `<label for="progress-code-output">Your progress code</label><textarea id="progress-code-output" rows="4" readonly spellcheck="false">${esc(transferCode)}</textarea>${button("Copy code", "copy-progress-code", "btn btn-outline")}` : ""}<label for="progress-code-input">Import a progress code</label><textarea id="progress-code-input" rows="4" spellcheck="false" autocomplete="off" placeholder="Paste a code starting with NUMI1.">${esc(transferDraft)}</textarea><div class="transfer-actions">${button("Import progress code", "import-progress-code", "btn btn-primary")}<label class="btn btn-outline file-import">Import a progress file<input id="import-progress" type="file" accept="application/json,.json" hidden></label></div><p class="transfer-status" role="status">${esc(transferStatus)}</p></section>`;
+}
+function restoreProgress(imported) {
+  state.progress = mergeProgress(state.progress, imported.progress);
+  if (imported.lesson) state.lesson = imported.lesson;
+  state.game.streak = 0;
+  save();
+}
+async function copyProgressCode() {
+  try {
+    if (typeof navigator === "undefined" || !navigator.clipboard?.writeText)
+      throw Error();
+    await navigator.clipboard.writeText(transferCode);
+    toast("Progress code copied.");
+  } catch {
+    const box = document.querySelector("#progress-code-output");
+    box?.focus();
+    box?.select?.();
+    toast("Select and copy the progress code above.");
+  }
+}
 function practiceMath(problem) {
   const pair = problem.prompt.match(/^Find the (GCF|LCM) of (\d+) and (\d+)/);
   if (pair) {
@@ -234,7 +278,7 @@ function lessonView() {
   const t = topics.find((x) => x.id === l.topic),
     example = p.stage !== "practice",
     problem = l.problems[p.index];
-  return `<div class="lesson-breadcrumb">${button(icon("back") + "All lessons", "all-lessons", "text-button")}<span>/</span><span>${t.title}</span></div><div class="lesson-layout"><aside class="lesson-sidebar"><span class="topic-icon ${t.color}">${icon(t.icon)}</span><span class="eyebrow muted">${t.short}</span><h2>${l.title}</h2><p>${l.subtitle}</p><div class="mini-progress"><span>${p.solved.length} of 8 solved</span><div class="progress-track"><span style="width:${(p.solved.length / 8) * 100}%"></span></div></div>${button(icon("book") + " Worked example", "example", "sidebar-example " + (example ? "selected" : ""))}<div class="question-dots" aria-label="Practice problems">${l.problems.map((_, i) => button(p.solved.includes(i) ? icon("check") : String(i + 1), `question:${i}`, `question-dot ${!example && p.index === i ? "selected" : ""} ${p.solved.includes(i) ? "solved" : ""}`, `aria-label="Problem ${i + 1}${p.solved.includes(i) ? ", solved" : ""}"`)).join("")}</div><div class="sidebar-tip">${icon("lab")}<strong>Need a different perspective?</strong><p>Your work stays right here when you open a visual aid.</p>${button("Open visual tools " + icon("arrow"), "open-tools", "text-button")}</div></aside><section class="lesson-workspace"><div class="workspace-top"><span class="eyebrow muted">${example ? "FIRST, LET’S WALK THROUGH IT" : `YOUR TURN · PROBLEM ${p.index + 1} OF 8`}</span><span class="badge">${icon("check")} ${p.solved.length === 8 ? "Lesson complete" : "At your own pace"}</span></div>${companionCard()}${example ? `<h1>Start with an example.</h1><p class="workspace-intro">A little guidance before you give it a go.</p><div class="rule-callout">${icon("info")}<p>${l.rule}</p></div><div class="example-equation">${math(l.example.expr)}<span>=</span>${math(l.example.answer)}</div><ol class="example-steps">${l.example.steps.map((s, i) => `<li><span>${i + 1}</span><p>${esc(s)}</p></li>`).join("")}</ol><div class="workspace-bottom"><span>Ready when you are.</span>${button("Try it yourself " + icon("arrow"), "begin-practice", "btn btn-primary")}</div>` : `<h1>${problem.type === "percent" ? "Think in hundredths." : problem.type === "prime" ? "Find the building blocks." : "Take it one step at a time."}</h1><p class="workspace-intro">${esc(problem.prompt)}</p><div class="practice-equation">${practiceMath(problem)}</div><form id="answer-form"><label for="answer">Your answer ${problem.type === "percent" ? "<span>(as a percentage)</span>" : ""}</label><div class="answer-row"><input id="answer" name="answer" type="text" autocomplete="off" spellcheck="false" placeholder="${problem.type === "prime" ? "e.g. 2^2 * 3" : problem.type === "fraction" ? "e.g. 3/4 or 1 1/2" : "Type your answer…"}" value="${esc(p.answers[p.index] || "")}" aria-describedby="answer-format feedback">${button("Check answer " + icon("check"), "check-answer", "btn btn-primary", 'type="submit"')}</div><small id="answer-format">${problem.type === "prime" ? "Use * to multiply and ^ for exponents." : problem.type === "percent" ? "Enter a number like 75, or write 75%." : problem.type === "decimal" ? "Enter a decimal, like 0.75." : "Fractions (3/4), mixed numbers (1 1/2), and decimals are welcome."}</small></form><div id="feedback" aria-live="polite">${feedback ? `<div class="feedback ${feedback.correct ? "success" : "retry"}">${icon(feedback.correct ? "check" : "info")}<span>${esc(feedback.message)}</span></div>` : p.solved.includes(p.index) ? `<div class="feedback success">${icon("check")} You’ve solved this one. Nice work!</div>` : ""}</div><div class="help-row">${button(icon("spark") + (p.hints.includes(p.index) ? "Hide hint" : "Give me a hint"), "hint", "text-button")}${button(icon("lab") + "Visualize it", "visualize-problem", "text-button")}${button(p.reveals.includes(p.index) ? "Hide explanation" : "See explanation", "reveal", "text-button")}</div>${p.hints.includes(p.index) ? `<div class="hint-box"><strong>A little nudge</strong><p>${esc(problem.hint)}</p></div>` : ""}${p.reveals.includes(p.index) ? `<div class="hint-box"><strong>Let’s work through it</strong><p>${esc(problem.solution)}</p><div class="solution-answer">Answer: ${math(problem.answer)}${problem.type === "percent" ? "%" : ""}</div><small>Read it through, then try entering the answer yourself.</small></div>` : ""}<div class="workspace-bottom">${button(icon("back") + "Previous", "previous-question", "btn btn-outline")}${p.index < 7 ? button("Next problem " + icon("arrow"), "next-question", "btn btn-primary") : button((p.solved.length === 8 ? "Lesson complete" : "Review my progress") + " " + icon("arrow"), "lesson-review", "btn btn-primary")}</div>`}</section></div>`;
+  return `<div class="lesson-breadcrumb">${button(icon("back") + "All lessons", "all-lessons", "text-button")}<span>/</span><span>${t.title}</span></div><div class="lesson-layout"><aside class="lesson-sidebar"><span class="topic-icon ${t.color}">${icon(t.icon)}</span><span class="eyebrow muted">${t.short}</span><h2>${l.title}</h2><p>${l.subtitle}</p><div class="mini-progress"><span>${p.solved.length} of 8 solved</span><div class="progress-track"><span style="width:${(p.solved.length / 8) * 100}%"></span></div></div>${button(icon("book") + " Worked example", "example", "sidebar-example " + (example ? "selected" : ""))}<div class="question-dots" aria-label="Practice problems">${l.problems.map((_, i) => button(p.solved.includes(i) ? icon("check") : String(i + 1), `question:${i}`, `question-dot ${!example && p.index === i ? "selected" : ""} ${p.solved.includes(i) ? "solved" : ""}`, `aria-label="Problem ${i + 1}${p.solved.includes(i) ? ", solved" : ""}"`)).join("")}</div><div class="sidebar-tip">${icon("lab")}<strong>Need a different perspective?</strong><p>Your work stays right here when you open a visual aid.</p>${button("Open visual tools " + icon("arrow"), "open-tools", "text-button")}</div></aside><section class="lesson-workspace"><div class="workspace-top"><span class="eyebrow muted">${example ? "FIRST, LET’S WALK THROUGH IT" : `YOUR TURN · PROBLEM ${p.index + 1} OF 8`}</span><span class="badge">${icon("check")} ${p.solved.length === 8 ? "Lesson complete" : "At your own pace"}</span></div>${companionCard()}${example ? `<h1>Start with an example.</h1><div class="rule-callout">${icon("info")}<p>${l.rule}</p></div><div class="example-equation">${math(l.example.expr)}</div><ol class="example-steps">${exampleSteps(workedExamples[l.id] || l.example)}</ol>${l.id === "fractions-1" ? moreFractionExamples() : ""}<div class="workspace-bottom"><span></span>${button("Try it yourself " + icon("arrow"), "begin-practice", "btn btn-primary")}</div>` : `<h1>${problem.type === "percent" ? "Convert to a percentage." : problem.type === "prime" ? "Prime factorization" : "Practice"}</h1><p class="workspace-intro">${esc(problem.prompt)}</p><div class="practice-equation">${practiceMath(problem)}</div><form id="answer-form"><label for="answer">Your answer ${problem.type === "percent" ? "<span>(as a percentage)</span>" : ""}</label><div class="answer-row"><input id="answer" name="answer" type="text" autocomplete="off" spellcheck="false" placeholder="${problem.type === "prime" ? "e.g. 2^2 * 3" : problem.type === "fraction" ? "e.g. 3/4 or 1 1/2" : "Type your answer…"}" value="${esc(p.answers[p.index] || "")}" aria-describedby="answer-format feedback">${button("Check answer " + icon("check"), "check-answer", "btn btn-primary", 'type="submit"')}</div><small id="answer-format">${problem.type === "prime" ? "Use * to multiply and ^ for exponents." : problem.type === "percent" ? "Enter a number like 75, or write 75%." : problem.type === "decimal" ? "Enter a decimal, like 0.75." : "Fractions (3/4), mixed numbers (1 1/2), and decimals are welcome."}</small></form><div id="feedback" aria-live="polite">${feedback ? `<div class="feedback ${feedback.correct ? "success" : "retry"}">${icon(feedback.correct ? "check" : "info")}<span>${esc(feedback.message)}</span></div>` : p.solved.includes(p.index) ? `<div class="feedback success">${icon("check")} You’ve solved this one. Nice work!</div>` : ""}</div><div class="help-row">${button(icon("spark") + (p.hints.includes(p.index) ? "Hide hint" : "Give me a hint"), "hint", "text-button")}${button(icon("lab") + "Visualize it", "visualize-problem", "text-button")}${button(p.reveals.includes(p.index) ? "Hide explanation" : "See explanation", "reveal", "text-button")}</div>${p.hints.includes(p.index) ? `<div class="hint-box"><strong>A little nudge</strong><p>${esc(problem.hint)}</p></div>` : ""}${p.reveals.includes(p.index) ? `<div class="hint-box"><strong>Let’s work through it</strong><p>${esc(problem.solution)}</p><div class="solution-answer">Answer: ${math(problem.answer)}${problem.type === "percent" ? "%" : ""}</div><small>Read it through, then try entering the answer yourself.</small></div>` : ""}<div class="workspace-bottom">${button(icon("back") + "Previous", "previous-question", "btn btn-outline")}${p.index < 7 ? button("Next problem " + icon("arrow"), "next-question", "btn btn-primary") : button((p.solved.length === 8 ? "Lesson complete" : "Review my progress") + " " + icon("arrow"), "lesson-review", "btn btn-primary")}</div>`}</section></div>`;
 }
 function progressView() {
   const solved = solvedCount(),
@@ -269,7 +313,7 @@ function settingsView() {
     ["ocean", "Ocean", "Clear blue & sea foam"],
     ["warm", "Warm clay", "Terracotta & soft sand"],
   ];
-  return `<div class="page-heading"><span class="eyebrow muted">MAKE YOURSELF AT HOME</span><h1>Your space. Your pace<span class="purple-text">.</span></h1><p>A comfortable place to think starts with what works for you.</p></div><div class="settings-layout"><section class="settings-card"><h2>Appearance</h2><p>Changes apply straight away and are saved in this browser.</p><fieldset class="theme-options"><legend>Color theme</legend>${themes.map(([id, title, description]) => `<label class="theme-option ${appearance.theme === id ? "selected" : ""}"><input type="radio" name="color-theme" value="${id}" data-setting="theme" ${appearance.theme === id ? "checked" : ""}><span class="theme-swatch ${id}" aria-hidden="true"></span><span><strong>${title}</strong><small>${description}</small></span></label>`).join("")}</fieldset><div class="settings-fields"><label><span>Text size</span><select data-setting="size" aria-label="Text size">${[
+  return `<div class="page-heading"><h1>Settings</h1></div><div class="settings-layout"><section class="settings-card"><h2>Appearance</h2><p>Changes apply straight away and are saved in this browser.</p><fieldset class="theme-options"><legend>Color theme</legend>${themes.map(([id, title, description]) => `<label class="theme-option ${appearance.theme === id ? "selected" : ""}"><input type="radio" name="color-theme" value="${id}" data-setting="theme" ${appearance.theme === id ? "checked" : ""}><span class="theme-swatch ${id}" aria-hidden="true"></span><span><strong>${title}</strong><small>${description}</small></span></label>`).join("")}</fieldset><div class="settings-fields"><label><span>Text size</span><select data-setting="size" aria-label="Text size">${[
     ["standard", "Standard"],
     ["comfortable", "Comfortable (default)"],
     ["large", "Extra large"],
@@ -290,13 +334,13 @@ function settingsView() {
     )
     .join(
       "",
-    )}</select><small>A little more definition when you need it.</small></label></div><label class="motion-setting"><input type="checkbox" data-setting="motion" ${appearance.motion ? "checked" : ""}><span><strong>Gentle celebrations</strong><small>Small companion animations after a new answer. Your system’s reduced-motion preference is always respected.</small></span></label>${button("Restore appearance defaults", "reset-appearance", "btn btn-outline")}<div class="settings-save-note">${icon("check")} Your answers, position, progress, and appearance are saved locally on this device.</div></section><aside class="settings-preview"><div class="preview-card"><span class="eyebrow muted">A LITTLE PREVIEW</span>${companionImage("happy", "", "Your happy study companion")}<h2>Looking good. Feeling ready.</h2><p>This is how your lesson text will look. Take a breath, find your focus, and give the next step a try.</p><div class="preview-equation">${math("1/2+1/4")}<span>=</span>${math("3/4")}</div><span class="btn btn-primary">One small step ${icon("leaf")}</span></div><div class="break-card">${companionImage("sleeping", "", "Your companion is taking a rest")}<div><h3>Breaks count, too.</h3><p>Come back when you’re ready. Your garden will be here.</p>${button("Take a little breather", "take-break", "text-button")}</div></div></aside></div>`;
+    )}</select><small>A little more definition when you need it.</small></label></div><label class="motion-setting"><input type="checkbox" data-setting="motion" ${appearance.motion ? "checked" : ""}><span><strong>Gentle celebrations</strong><small>Small companion animations after a new answer. Your system’s reduced-motion preference is always respected.</small></span></label>${button("Restore appearance defaults", "reset-appearance", "btn btn-outline")}<div class="settings-save-note">${icon("check")} Your answers, position, progress, and appearance are saved locally on this device.</div>${progressTransferUI()}</section><aside class="settings-preview"><div class="preview-card"><span class="eyebrow muted">A LITTLE PREVIEW</span>${companionImage("happy", "", "Your happy study companion")}<h2>Text preview</h2><p>Preview your text and equation settings.</p><div class="preview-equation">${math("1/2+1/4")}<span>=</span>${math("3/4")}</div><span class="btn btn-primary">Button preview</span></div></aside></div>`;
 }
 function labView() {
-  return `<div class="page-heading lab-heading"><div><span class="eyebrow muted">LESS ABSTRACT. MORE “OH, I GET IT.”</span><h1>Make math make sense<span class="purple-text">.</span></h1><p>Move a number. Count a counter. See a new way to understand.</p></div><span class="lab-heading-badge">${icon("spark")} A space to experiment</span></div>${state.lesson ? `<div class="return-banner">${icon("book")}<span>Your lesson is right where you left it.</span>${button("Return to lesson " + icon("arrow"), "return-lesson", "text-button")}</div>` : ""}<div id="lab-tools">${toolsUI()}</div><div class="lab-bottom"><div>${icon("info")}<p><strong>Try it, change it, try again.</strong><br>There’s no wrong way to explore. These tools are here to help things click.</p></div><span>More aids on our drawing board: a balance scale for equations and a unit conversion ladder.</span></div>`;
+  return `<div class="page-heading lab-heading"><div><h1>Visual tools</h1></div></div>${state.lesson ? '<div class="return-banner">' + icon("book") + "<span>Your lesson is saved.</span>" + button("Return to lesson " + icon("arrow"), "return-lesson", "text-button") + "</div>" : ""}<div id="lab-tools">${toolsUI()}</div>`;
 }
 function toolsUI() {
-  return `<div class="tool-layout"><nav class="tool-nav" aria-label="Visual tools">${tools.map(([id, title, i]) => button(icon(i) + `<span>${title}</span>` + icon("chevron"), `tool:${id}`, `tool-tab ${tool === id ? "selected" : ""}`, 'aria-current="' + (tool === id ? "true" : "false") + '"')).join("")}<div class="tool-nav-note">${icon("leaf")} Understanding grows<br>with a little exploration.</div></nav><section class="tool-panel">${{ line: numberLine, counters: counterTool, fractions: fractionTool, percent: percentTool, factors: factorTool, calculator: calculatorTool }[tool]()}</section></div>`;
+  return `<div class="tool-layout"><nav class="tool-nav" aria-label="Visual tools">${tools.map(([id, title, i]) => button(icon(i) + `<span>${title}</span>` + icon("chevron"), `tool:${id}`, `tool-tab ${tool === id ? "selected" : ""}`, 'aria-current="' + (tool === id ? "true" : "false") + '"')).join("")}</nav><section class="tool-panel">${{ line: numberLine, counters: counterTool, fractions: fractionTool, percent: percentTool, factors: factorTool, calculator: calculatorTool }[tool]()}</section></div>`;
 }
 const toolTitle = (title, desc) =>
   `<div class="tool-heading"><h2>${title}</h2><p>${desc}</p></div>`;
@@ -305,19 +349,56 @@ const field = (label, name, value, min, max, step = "1") =>
 function lineData() {
   return lineModel(lab);
 }
+function commitLineInputs() {
+  const panel = document
+    .querySelector(".line-operations")
+    ?.closest(".tool-panel");
+  if (!panel) return true;
+  const a = Number(panel.querySelector('[data-lab="a"]').value),
+    b = Number(panel.querySelector('[data-lab="b"]').value),
+    op = panel.querySelector('[data-lab="op"]').value;
+  const operations = lab.operations.map((operation, i) => ({
+    op: panel.querySelector(
+      `[data-line-index="${i + 1}"][data-line-field="op"]`,
+    ).value,
+    value: Number(
+      panel.querySelector(
+        `[data-line-index="${i + 1}"][data-line-field="value"]`,
+      ).value,
+    ),
+  }));
+  const inputs = [...panel.querySelectorAll('input[type="number"]')];
+  if (
+    inputs.some(
+      (input) => input.value === "" || !Number.isFinite(Number(input.value)),
+    )
+  ) {
+    toast("Enter a finite number for each operation.");
+    return false;
+  }
+  if (
+    a !== lab.a ||
+    b !== lab.b ||
+    op !== lab.op ||
+    JSON.stringify(operations) !== JSON.stringify(lab.operations)
+  )
+    lab.step = 0;
+  Object.assign(lab, { a, b, op, operations });
+  return true;
+}
 function numberLine() {
   return numberLineView(lab, { field, button, icon, toolTitle });
 }
 function counterTool() {
   const { pos, neg } = lab,
     pairs = Math.min(pos, neg);
-  return `${toolTitle("Make negatives tangible", "A positive and a negative cancel out. Together, they make a zero pair.")}<div class="counter-columns"><div class="counter-group"><div class="counter-heading"><span class="positive-text">Positive counters</span><b>+${pos}</b></div><div class="counter-tray" aria-label="${pos} positive counters">${Array.from({ length: pos }, () => '<span class="counter positive">+</span>').join("") || '<span class="empty-tray">Add a positive counter</span>'}</div><div class="counter-buttons">${button("− Remove one", "counter:pos,-1", "btn btn-small btn-outline", pos === 0 ? "disabled" : "")}${button("+ Add positive", "counter:pos,1", "btn btn-small", pos >= 30 ? "disabled" : "")}</div></div><div class="counter-group"><div class="counter-heading"><span class="negative-text">Negative counters</span><b>−${neg}</b></div><div class="counter-tray" aria-label="${neg} negative counters">${Array.from({ length: neg }, () => '<span class="counter negative">−</span>').join("") || '<span class="empty-tray">Add a negative counter</span>'}</div><div class="counter-buttons">${button("− Remove one", "counter:neg,-1", "btn btn-small btn-outline", neg === 0 ? "disabled" : "")}${button("+ Add negative", "counter:neg,1", "btn btn-small", neg >= 30 ? "disabled" : "")}</div></div></div><div class="counter-summary"><div>${math(`${pos}+(-${neg})`)}<span>=</span><strong>${pretty(pos - neg)}</strong></div><span>${pairs} zero ${pairs === 1 ? "pair" : "pairs"} can cancel</span></div><div class="counter-actions">${button("Cancel zero pairs " + icon("spark"), "cancel-pairs", "btn btn-primary", pairs === 0 ? "disabled" : "")}${button("+ Add a zero pair", "zero-pair", "btn btn-outline", pos >= 30 || neg >= 30 ? "disabled" : "")}${button("Start over", "counter-reset", "text-button")}</div><div class="visual-explanation">${icon("info")}<div><strong>Different-looking counters. The same total.</strong><p>Try adding a zero pair. Your total stays the same! To model 3 − (−2), start with three positives, add two zero pairs, then remove two negatives. Five positives remain.</p></div></div>`;
+  return `${toolTitle("Signed counters", "A positive and a negative cancel out. Together, they make a zero pair.")}<div class="counter-columns"><div class="counter-group"><div class="counter-heading"><span class="positive-text">Positive counters</span><b>+${pos}</b></div><div class="counter-tray" aria-label="${pos} positive counters">${Array.from({ length: pos }, () => '<span class="counter positive">+</span>').join("") || '<span class="empty-tray">Add a positive counter</span>'}</div><div class="counter-buttons">${button("− Remove one", "counter:pos,-1", "btn btn-small btn-outline", pos === 0 ? "disabled" : "")}${button("+ Add positive", "counter:pos,1", "btn btn-small", pos >= 30 ? "disabled" : "")}</div></div><div class="counter-group"><div class="counter-heading"><span class="negative-text">Negative counters</span><b>−${neg}</b></div><div class="counter-tray" aria-label="${neg} negative counters">${Array.from({ length: neg }, () => '<span class="counter negative">−</span>').join("") || '<span class="empty-tray">Add a negative counter</span>'}</div><div class="counter-buttons">${button("− Remove one", "counter:neg,-1", "btn btn-small btn-outline", neg === 0 ? "disabled" : "")}${button("+ Add negative", "counter:neg,1", "btn btn-small", neg >= 30 ? "disabled" : "")}</div></div></div><div class="counter-summary"><div>${math(`${pos}+(-${neg})`)}<span>=</span><strong>${pretty(pos - neg)}</strong></div><span>${pairs} zero ${pairs === 1 ? "pair" : "pairs"} can cancel</span></div><div class="counter-actions">${button("Cancel zero pairs " + icon("spark"), "cancel-pairs", "btn btn-primary", pairs === 0 ? "disabled" : "")}${button("+ Add a zero pair", "zero-pair", "btn btn-outline", pos >= 30 || neg >= 30 ? "disabled" : "")}${button("Start over", "counter-reset", "text-button")}</div><div class="visual-explanation">${icon("info")}<div><strong>Different-looking counters. The same total.</strong><p>Try adding a zero pair. Your total stays the same! To model 3 − (−2), start with three positives, add two zero pairs, then remove two negatives. Five positives remain.</p></div></div>`;
 }
 function fractionTool() {
   return fractionView(lab, { field, button, icon, toolTitle });
 }
 function percentTool() {
-  return `${toolTitle("A hundred little possibilities", "Percent means “out of 100.” Each square is one percent.")}<div class="percent-layout"><div class="hundred-grid" aria-label="${lab.percent} of 100 squares shaded">${Array.from({ length: 100 }, (_, i) => `<button class="grid-cell ${i < lab.percent ? "filled" : ""}" data-action="percent:${i + 1}" aria-label="Set to ${i + 1} percent"></button>`).join("")}</div><div class="percent-values">${field("Percent shaded", "percent", lab.percent, 0, 100)}<div class="percent-equivalent"><strong>${lab.percent}%</strong><span>= ${math(`${lab.percent}/100`)}</span><span>= ${pretty(lab.percent / 100)}</span></div><p>One idea, three ways.<br>A percentage, a fraction, a decimal.</p></div></div><input class="wide-slider" type="range" min="0" max="100" value="${lab.percent}" data-lab="percent" aria-label="Percent shaded"><div class="try-presets"><span>Try it out</span>${[0, 25, 50, 75, 100].map((v) => button(`${v}%`, `percent:${v}`, "preset")).join("")}</div>`;
+  return `${toolTitle("Percentage grid", "Percent means “out of 100.” Each square is one percent.")}<div class="percent-layout"><div class="hundred-grid" aria-label="${lab.percent} of 100 squares shaded">${Array.from({ length: 100 }, (_, i) => `<button class="grid-cell ${i < lab.percent ? "filled" : ""}" data-action="percent:${i + 1}" aria-label="Set to ${i + 1} percent"></button>`).join("")}</div><div class="percent-values">${field("Percent shaded", "percent", lab.percent, 0, 100)}<div class="percent-equivalent"><strong>${lab.percent}%</strong><span>= ${math(`${lab.percent}/100`)}</span><span>= ${pretty(lab.percent / 100)}</span></div><p>One idea, three ways.<br>A percentage, a fraction, a decimal.</p></div></div><input class="wide-slider" type="range" min="0" max="100" value="${lab.percent}" data-lab="percent" aria-label="Percent shaded"><div class="try-presets"><span>Try it out</span>${[0, 25, 50, 75, 100].map((v) => button(`${v}%`, `percent:${v}`, "preset")).join("")}</div>`;
 }
 const gcd = (a, b) => (b ? gcd(b, a % b) : a);
 function primeFactors(n) {
@@ -340,7 +421,7 @@ function factorTool() {
     b = lab.factorB,
     g = gcd(a, b),
     l = (a * b) / g;
-  return `${toolTitle("Find the connections inside numbers", "Break them into primes. Discover what they have in common.")}<div class="tool-inputs">${field("First number", "factorA", a, 1, 1000)}${field("Second number", "factorB", b, 1, 1000)}</div><div class="factor-columns">${[
+  return `${toolTitle("Factors & multiples", "Break them into primes. Discover what they have in common.")}<div class="tool-inputs">${field("First number", "factorA", a, 1, 1000)}${field("Second number", "factorB", b, 1, 1000)}</div><div class="factor-columns">${[
     a,
     b,
   ]
@@ -365,7 +446,7 @@ function factorTool() {
     )}</div><div class="factor-results"><div><span>Greatest common factor</span><strong>${g}</strong><small>The largest factor they share.</small></div><div><span>Least common multiple</span><strong>${l}</strong><small>Their first shared positive multiple.</small></div></div><div class="visual-explanation">${icon("info")}<div><strong>A shortcut to common denominators.</strong><p>For fractions with denominators ${a} and ${b}, use ${l} as the least common denominator. Highlighted chips show all the factors shared by both numbers.</p></div></div>`;
 }
 function calculatorTool() {
-  return `${toolTitle("A little help with the arithmetic", "Try it by hand first, then use this space to check your thinking.")}<div class="calculator-layout"><form id="calculator-form" class="calculator"><label for="calc-input">Your expression</label><input id="calc-input" value="${esc(lab.calc)}" placeholder="e.g. (−3 + 5) × 2" autocomplete="off" spellcheck="false"><div class="calculator-result ${lab.calcError ? "calc-error" : ""}" aria-live="polite">${esc(lab.result || "0")}</div><div class="calculator-keys">${["C", "(", ")", "⌫", "7", "8", "9", "÷", "4", "5", "6", "×", "1", "2", "3", "−", "0", ".", "%", "+", "±", "^", "/", "="].map((key) => button(key, `calc:${key}`, `calc-key ${key === "=" ? "equals" : ""} ${["÷", "×", "−", "+"].includes(key) ? "operator" : ""}`, 'type="button"')).join("")}</div></form><div class="calculator-guide"><span class="stat-icon">${icon("calculator")}</span><h3>A check, not a shortcut.</h3><p>Use parentheses to group things together, and ^ for powers.</p><div>${math("(-3)^2")}<span> gives 9</span></div><div>${math("-3^2")}<span> gives −9</span></div><p>Type fractions as 3/4 and mixed numbers as 1 1/2. Press Enter to calculate.</p><small>Division and multiplication follow equal priority, from left to right.</small></div></div>`;
+  return `${toolTitle("Calculator", "Try it by hand first, then use this space to check your thinking.")}<div class="calculator-layout"><form id="calculator-form" class="calculator"><label for="calc-input">Your expression</label><input id="calc-input" value="${esc(lab.calc)}" placeholder="e.g. (−3 + 5) × 2" autocomplete="off" spellcheck="false"><div class="calculator-result ${lab.calcError ? "calc-error" : ""}" aria-live="polite">${esc(lab.result || "0")}</div><div class="calculator-keys">${["C", "(", ")", "⌫", "7", "8", "9", "÷", "4", "5", "6", "×", "1", "2", "3", "−", "0", ".", "%", "+", "±", "^", "/", "="].map((key) => button(key, `calc:${key}`, `calc-key ${key === "=" ? "equals" : ""} ${["÷", "×", "−", "+"].includes(key) ? "operator" : ""}`, 'type="button"')).join("")}</div></form><div class="calculator-guide"><span class="stat-icon">${icon("calculator")}</span><h3>A check, not a shortcut.</h3><p>Use parentheses to group things together, and ^ for powers.</p><div>${math("(-3)^2")}<span> gives 9</span></div><div>${math("-3^2")}<span> gives −9</span></div><p>Type fractions as 3/4 and mixed numbers as 1 1/2. Press Enter to calculate.</p><small>Division and multiplication follow equal priority, from left to right.</small></div></div>`;
 }
 
 function render() {
@@ -481,11 +562,23 @@ function checkCurrent() {
     document.querySelector("#answer")?.focus();
   }
 }
+// Keep a pending numeric edit from replacing the clicked button on blur.
+document.addEventListener("pointerdown", (e) => {
+  const action = e.target.closest("[data-action]")?.dataset.action || "";
+  if (
+    action.startsWith("line-") &&
+    document.activeElement?.matches(
+      '[data-lab="a"],[data-lab="b"],[data-line-field]',
+    )
+  )
+    e.preventDefault();
+});
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-action]");
   if (!el || el.disabled) return;
   const [action, ...rest] = el.dataset.action.split(":"),
     value = rest.join(":");
+  if (action.startsWith("line-") && !commitLineInputs()) return;
   if (el.tagName === "A") e.preventDefault();
   if (action === "reset-appearance") {
     appearance = { ...defaults };
@@ -553,10 +646,23 @@ document.addEventListener("click", (e) => {
         lab.a = Number(match[1]);
         lab.b = Number(match[3]);
         lab.op = match[2];
-        lab.step = null;
+        lab.step = 0;
+        lab.operations = [];
       }
     }
     openTools();
+  } else if (action === "line-add") {
+    lab.operations.push({ op: "+", value: 1 });
+    lab.step = 0;
+    rerenderTools();
+  } else if (action === "line-remove") {
+    const ops = lineOperations(lab);
+    ops.splice(Number(value), 1);
+    lab.op = ops[0].op;
+    lab.b = ops[0].value;
+    lab.operations = ops.slice(1);
+    lab.step = 0;
+    rerenderTools();
   } else if (action === "line-reset") {
     lab.step = 0;
     rerenderTools();
@@ -568,7 +674,13 @@ document.addEventListener("click", (e) => {
     rerenderTools();
   } else if (action === "preset") {
     const [a, b, op] = value.split(",");
-    Object.assign(lab, { a: Number(a), b: Number(b), op, step: null });
+    Object.assign(lab, {
+      a: Number(a),
+      b: Number(b),
+      op,
+      step: 0,
+      operations: [],
+    });
     rerenderTools();
   } else if (action === "counter") {
     const [which, delta] = value.split(",");
@@ -612,6 +724,21 @@ document.addEventListener("click", (e) => {
     else lab.calc += { "×": "*", "÷": "/", "−": "-" }[value] || value;
     rerenderTools();
     document.querySelector("#calc-input")?.focus();
+  } else if (action === "generate-progress-code") {
+    transferCode = exportProgressCode(state);
+    transferStatus =
+      "Progress code ready. Copy the entire code to your other device.";
+    render();
+  } else if (action === "copy-progress-code") {
+    copyProgressCode();
+  } else if (action === "import-progress-code") {
+    try {
+      restoreProgress(importProgressCode(transferDraft));
+      transferStatus = "Progress imported and saved on this device.";
+    } catch (e) {
+      transferStatus = e.message;
+    }
+    render();
   } else if (action === "export-progress") {
     save();
     const a = document.createElement("a");
@@ -643,8 +770,44 @@ document.addEventListener("input", (e) => {
     save();
   }
   if (e.target.id === "calc-input") lab.calc = e.target.value;
+  if (e.target.id === "progress-code-input") transferDraft = e.target.value;
+  if (["a", "b"].includes(e.target.dataset.lab) || e.target.dataset.lineField) {
+    lab.step = 0;
+    const panel = e.target.closest(".tool-panel");
+    if (panel) {
+      panel.querySelector(".result-pill").textContent = "?";
+      panel.querySelectorAll(".operation-answer").forEach((e) => e.remove());
+      panel
+        .querySelectorAll(
+          '[data-action="line-step"],[data-action="line-finish"]',
+        )
+        .forEach((button) => button.removeAttribute("disabled"));
+      panel
+        .querySelectorAll(".interactive-line,.line-position,.line-legend")
+        .forEach((e) => e.setAttribute("hidden", ""));
+    }
+  }
 });
 document.addEventListener("change", async (e) => {
+  const lineIndex = e.target.dataset.lineIndex;
+  if (lineIndex !== undefined) {
+    const operation = lab.operations[Number(lineIndex) - 1],
+      key = e.target.dataset.lineField;
+    if (!operation) return;
+    if (key === "op") operation.op = e.target.value;
+    else {
+      const n = Number(e.target.value);
+      if (!Number.isFinite(n) || !e.target.value) {
+        e.target.value = operation.value;
+        rerenderTools();
+        return;
+      }
+      operation.value = n;
+    }
+    lab.step = 0;
+    rerenderTools();
+    return;
+  }
   const key = e.target.dataset.lab;
   if (key) {
     if (key === "op") lab.op = e.target.value;
@@ -672,11 +835,12 @@ document.addEventListener("change", async (e) => {
             ? "Use a whole number in the allowed range. Fractions support values up to 9,007,199,254,740,991."
             : "Enter a finite number. The line will resize to fit.",
         );
+        if (key === "a" || key === "b") rerenderTools();
         return;
       }
       lab[key] = v;
     }
-    lab.step = null;
+    lab.step = 0;
     rerenderTools();
   }
   const setting = e.target.dataset.setting;
@@ -693,47 +857,7 @@ document.addEventListener("change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
       if (file.size > 100000) throw Error();
-      const imported = JSON.parse(await file.text());
-      if (imported.version !== 1 || !imported.progress) throw Error();
-      const progress = {};
-      for (const l of lessons) {
-        const p = imported.progress[l.id];
-        if (!p) continue;
-        if (
-          !Array.isArray(p.solved) ||
-          !p.answers ||
-          typeof p.answers !== "object"
-        )
-          throw Error();
-        progress[l.id] = {
-          index:
-            Number.isInteger(p.index) && p.index >= 0 && p.index < 8
-              ? p.index
-              : 0,
-          stage: p.stage === "practice" ? "practice" : "example",
-          solved: [
-            ...new Set(
-              p.solved.filter((i) => Number.isInteger(i) && i >= 0 && i < 8),
-            ),
-          ],
-          answers: Object.fromEntries(
-            Object.entries(p.answers).filter(
-              ([k, v]) =>
-                /^\d$/.test(k) &&
-                Number(k) < 8 &&
-                typeof v === "string" &&
-                v.length < 500,
-            ),
-          ),
-          hints: Array.isArray(p.hints)
-            ? p.hints.filter((i) => Number.isInteger(i) && i >= 0 && i < 8)
-            : [],
-          reveals: Array.isArray(p.reveals)
-            ? p.reveals.filter((i) => Number.isInteger(i) && i >= 0 && i < 8)
-            : [],
-        };
-      }
-      state.progress = progress;
+      restoreProgress(normalizeProgress(JSON.parse(await file.text())));
       render();
       toast("Your learning progress has been restored.");
     } catch {
