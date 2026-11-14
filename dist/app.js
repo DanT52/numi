@@ -14,7 +14,11 @@ import {
   normalizeProgress,
   mergeProgress,
 } from "./progress-transfer.js";
-import { lineOperations, lineModel } from "./visual-models.js";
+import {
+  lineOperations,
+  lineModel,
+  expressionToLine,
+} from "./visual-models.js";
 import { numberLineView, fractionView } from "./tool-views.js";
 import {
   loadAppearance,
@@ -677,13 +681,13 @@ document.addEventListener("click", (e) => {
     tool = l.tool;
     if (l.topic === "integers") {
       const expr = l.problems[getProgress(l.id).index].expr;
-      const match = expr.match(/^\(?(-?\d+)\)?([+*/-])\(?(-?\d+)\)?$/);
-      if (match) {
-        lab.a = Number(match[1]);
-        lab.b = Number(match[3]);
-        lab.op = match[2];
-        lab.step = 0;
-        lab.operations = [];
+      const inputs = expressionToLine(expr);
+      if (tool === "line" && inputs) Object.assign(lab, inputs);
+      else {
+        tool = "calculator";
+        lab.calc = expr;
+        lab.result = "";
+        lab.calcError = false;
       }
     }
     openTools();

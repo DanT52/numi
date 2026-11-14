@@ -1,4 +1,5 @@
 import { buildFractionLessons } from "./fraction-lessons.js";
+import { signedAdditionLesson, signedReviewLesson } from "./signed-lessons.js";
 const q = (
   expr,
   answer,
@@ -198,6 +199,7 @@ export const lessons = [
       ),
     ],
   },
+  signedAdditionLesson,
   {
     id: "integers-2",
     topic: "integers",
@@ -266,6 +268,7 @@ export const lessons = [
       ),
     ],
   },
+  signedReviewLesson,
   {
     id: "pemdas-1",
     topic: "pemdas",

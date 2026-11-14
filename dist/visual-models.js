@@ -1,4 +1,38 @@
+import { parse } from "./math.js";
 // Keep diagrams bounded in size while retaining the exact values entered.
+export function expressionToLine(expression) {
+  const number = (node) =>
+    node.op === "number"
+      ? node.value
+      : node.op === "group" || node.op === "unary+"
+        ? number(node.right)
+        : node.op === "unary-"
+          ? number(node.right) === null
+            ? null
+            : -number(node.right)
+          : null;
+  const walk = (node) => {
+    const n = number(node);
+    if (n !== null) return { a: n, operations: [] };
+    if (node.op === "group") return walk(node.right);
+    if (!["+", "-", "*", "/"].includes(node.op)) return null;
+    const left = walk(node.left),
+      right = number(node.right);
+    if (!left || right === null) return null;
+    return {
+      ...left,
+      operations: [...left.operations, { op: node.op, value: right }],
+    };
+  };
+  try {
+    const result = walk(parse(expression));
+    if (!result?.operations.length) return null;
+    const [first, ...operations] = result.operations;
+    return { a: result.a, op: first.op, b: first.value, operations, step: 0 };
+  } catch {
+    return null;
+  }
+}
 export function numberLineScale(...numbers) {
   const peak = Math.max(6, ...numbers.filter(Number.isFinite).map(Math.abs));
   const target = peak / 4;

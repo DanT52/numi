@@ -89,6 +89,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
     );
     const before = JSON.stringify(persisted().progress);
     click("toggle-topic:fractions");
+    click("toggle-topic:integers");
     assert.equal(
       document.querySelectorAll(".lesson-link").length,
       lessons.length,
@@ -100,6 +101,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       "true",
     );
     click("toggle-topic:fractions");
+    click("toggle-topic:integers");
     assert.equal(
       document.querySelectorAll("#lessons-fractions .lesson-link").length,
       3,
@@ -362,7 +364,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
         click("all-lessons");
       }
       click("view:progress");
-      assert.match(document.querySelector(".stats-grid").textContent, /132/);
+      assert.match(document.querySelector(".stats-grid").textContent, /156/);
       assert.match(document.querySelector(".stats-grid").textContent, /100/);
       assert.equal(
         lessons.filter(
