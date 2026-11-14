@@ -4,10 +4,10 @@
   --white: #fff;
   --ink: #302d3c;
   --muted: #85808e;
-  --purple: #7656c6;
-  --purple-dark: #6241b1;
-  --lavender: #eee8f8;
-  --border: #e9e6e9;
+  --purple: var(--accent);
+  --purple-dark: var(--accent-hover);
+  --lavender: var(--soft);
+  --border: #dce2d2;
   --green: #467c67;
   --shadow: 0 3px 12px #3b2b5e04;
   --font: "DM Sans", system-ui, -apple-system, sans-serif;
@@ -20,7 +20,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font);
-  font-size: 14px;
+  font-size: 0.875rem;
   -webkit-font-smoothing: antialiased;
 }
 button,
@@ -93,19 +93,19 @@ svg.icon {
   align-items: center;
   justify-content: center;
   gap: 9px;
-  background: #eee9f7;
+  background: var(--soft);
   border: 1px solid transparent;
   border-radius: 9px;
   padding: 12px 17px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.4;
   transition:
     background 0.18s,
     transform 0.18s;
 }
 .btn:hover:not(:disabled) {
-  background: #e1d7f3;
+  background: var(--accent-soft);
   transform: translateY(-1px);
 }
 .btn-primary {
@@ -118,15 +118,15 @@ svg.icon {
 }
 .btn-outline {
   background: white;
-  border-color: #e6e1ec;
-  color: #625b70;
+  border-color: var(--muted);
+  color: var(--accent);
 }
 .btn-outline:hover:not(:disabled) {
-  background: #f7f4fc;
+  background: var(--soft);
 }
 .btn-small {
   padding: 9px 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .btn .icon {
   width: 17px;
@@ -139,7 +139,7 @@ svg.icon {
   display: inline-flex;
   gap: 9px;
   align-items: center;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--purple);
 }
@@ -158,7 +158,7 @@ svg.icon {
 }
 .eyebrow {
   display: block;
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 650;
   letter-spacing: 1.6px;
   line-height: 1.7;
@@ -168,11 +168,11 @@ svg.icon {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #f1eef5;
+  background: var(--soft);
   border-radius: 6px;
-  color: #83778f;
+  color: var(--accent);
   padding: 6px 9px;
-  font-size: 10px;
+  font-size: 0.75rem;
   white-space: nowrap;
 }
 .badge .icon {
@@ -209,7 +209,7 @@ svg.icon {
   display: flex;
   align-items: center;
   font-family: "Manrope", var(--font);
-  font-size: 29px;
+  font-size: 1.8125rem;
   font-weight: 800;
   letter-spacing: -1.6px;
 }
@@ -222,14 +222,14 @@ svg.icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 29px;
+  font-size: 1.8125rem;
   margin-right: 9px;
   position: relative;
   line-height: 1;
 }
 .brand-mark > span {
   position: absolute;
-  font-size: 10px;
+  font-size: 0.75rem;
   right: 4px;
   top: 3px;
 }
@@ -246,12 +246,12 @@ svg.icon {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 0.75rem;
   padding: 11px 15px;
   border: 0;
   background: none;
   border-radius: 8px;
-  color: #898391;
+  color: var(--accent);
   font-weight: 500;
 }
 .nav-item .icon {
@@ -259,11 +259,11 @@ svg.icon {
   height: 17px;
 }
 .nav-item:hover {
-  background: #f4f0fa;
+  background: var(--soft);
 }
 .nav-item.active {
-  color: #7153b9;
-  background: #f0ebf9;
+  color: var(--accent);
+  background: var(--soft);
   font-weight: 650;
 }
 .header-right {
@@ -275,8 +275,8 @@ svg.icon {
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #8b8691;
-  font-size: 10px;
+  color: var(--accent);
+  font-size: 0.75rem;
 }
 .saved-label .icon {
   width: 13px;
@@ -289,13 +289,13 @@ svg.icon {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #ece8e1;
+  background: var(--soft);
   color: #938371;
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 .header-right .btn {
-  font-size: 11px;
+  font-size: 0.75rem;
   padding: 8px 11px;
   background: transparent;
 }
@@ -314,8 +314,8 @@ main {
   display: grid;
   grid-template-columns: 1.1fr 1fr;
   align-items: center;
-  background: #f0ecf7;
-  border: 1px solid #e9e3f1;
+  background: var(--soft);
+  border: 1px solid var(--border);
   border-radius: 15px;
   overflow: hidden;
   padding: 37px 41px 33px;
@@ -325,38 +325,38 @@ main {
   z-index: 1;
 }
 .hero .eyebrow {
-  font-size: 9px;
+  font-size: 0.75rem;
   letter-spacing: 1.5px;
-  color: #8d78a7;
+  color: var(--accent);
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 15px;
 }
 .tiny-star {
-  font-size: 15px;
-  color: #9f83bf;
+  font-size: 0.9375rem;
+  color: var(--muted);
 }
 .hero h1 {
   font-weight: 750;
-  font-size: 39px;
+  font-size: 2.4375rem;
   line-height: 1.27;
   letter-spacing: -1.7px;
 }
 .hero p {
-  font-size: 12px;
-  color: #8a8195;
+  font-size: 0.75rem;
+  color: var(--accent);
   line-height: 1.8;
   margin: 14px 0 22px;
 }
 .hero .btn {
-  font-size: 11px;
+  font-size: 0.75rem;
   padding: 11px 15px;
   gap: 15px;
 }
 .hero-note {
-  font-size: 9px;
-  color: #9a90a4;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-left: 14px;
 }
 .hero-art {
@@ -371,24 +371,24 @@ main {
 .floating-equation {
   align-self: center;
   transform: rotate(-7deg);
-  font-size: 29px;
+  font-size: 1.8125rem;
   font-weight: 500;
   letter-spacing: 1px;
   position: relative;
   top: 1px;
   margin-left: 9px;
-  color: #a997bc;
+  color: var(--muted);
 }
 .floating-equation span {
-  color: #8066ae;
+  color: var(--accent);
 }
 .floating-equation b {
   font-weight: 650;
-  background: #e3d9f2;
-  border: 1px solid #d4c4e8;
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 5px 13px;
-  color: #6d4fae;
+  color: var(--accent);
   margin-left: 3px;
   display: inline-block;
   transform: rotate(5deg);
@@ -404,22 +404,22 @@ main {
   justify-content: center;
   align-items: center;
   gap: 7px;
-  font-size: 9px;
-  color: #9989a9;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-top: -4px;
   letter-spacing: 0.1px;
 }
 .tiny-dot {
   width: 5px;
   height: 5px;
-  background: #a18eb7;
+  background: var(--accent);
   border-radius: 50%;
   display: inline-block;
 }
 .art-spark {
   position: absolute;
-  color: #b9a4d4;
-  font-size: 37px;
+  color: var(--muted);
+  font-size: 2.3125rem;
   line-height: 1;
 }
 .spark-one {
@@ -430,8 +430,8 @@ main {
 .spark-two {
   right: 15px;
   bottom: 66px;
-  font-size: 27px;
-  color: #b1a1c3;
+  font-size: 1.6875rem;
+  color: var(--muted);
 }
 .dashboard-grid {
   display: grid;
@@ -446,24 +446,24 @@ main {
   gap: 16px;
 }
 .section-heading h2 {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 700;
   margin-top: 4px;
   letter-spacing: -0.7px;
 }
 .section-heading .eyebrow {
-  font-size: 8px;
+  font-size: 0.75rem;
   letter-spacing: 1.55px;
 }
 .section-heading p {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.75rem;
   margin-top: 6px;
 }
 .count-badge {
-  font-size: 9px;
-  color: #89808f;
-  background: #efedf0;
+  font-size: 0.75rem;
+  color: var(--accent);
+  background: var(--soft);
   padding: 5px 8px;
   margin-top: 15px;
 }
@@ -476,19 +476,19 @@ main {
 }
 .filter {
   background: transparent;
-  color: #908995;
+  color: var(--accent);
   border: 1px solid transparent;
   border-radius: 6px;
   padding: 7px 10px;
-  font-size: 10px;
+  font-size: 0.75rem;
 }
 .filter:hover {
-  background: #f1edf6;
+  background: var(--soft);
 }
 .filter.selected {
   background: #fff;
-  color: #6c578c;
-  border-color: #e3dbea;
+  color: var(--accent);
+  border-color: var(--muted);
   box-shadow: var(--shadow);
   font-weight: 650;
 }
@@ -498,7 +498,7 @@ main {
   gap: 18px;
 }
 .topic-card {
-  border: 1px solid #e8e4e8;
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px 21px 0;
   background: white;
@@ -519,8 +519,8 @@ main {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: #eee7f8;
-  color: #8c70bd;
+  background: var(--soft);
+  color: var(--muted);
 }
 .topic-icon .icon {
   width: 23px;
@@ -528,10 +528,10 @@ main {
   stroke-width: 1.5;
 }
 .topic-tag {
-  font-size: 8px;
+  font-size: 0.75rem;
   color: #a9998f;
-  background: #faf4ec;
-  border: 1px solid #f1e9de;
+  background: var(--soft);
+  border: 1px solid var(--border);
   padding: 4px 7px;
   border-radius: 5px;
 }
@@ -542,42 +542,42 @@ main {
 }
 .purple .topic-icon,
 .topic-icon.purple {
-  background: #eee5fa;
-  color: #9c78c5;
+  background: var(--soft);
+  color: var(--muted);
 }
 .green .topic-icon,
 .topic-icon.green {
-  background: #e8f1e9;
+  background: var(--soft);
   color: #7ba88b;
 }
 .blue .topic-icon,
 .topic-icon.blue {
-  background: #e7eff9;
-  color: #7d9dc3;
+  background: var(--soft);
+  color: var(--muted);
 }
 .purple .topic-tag {
-  background: #f7f2fd;
-  border-color: #ede4f6;
-  color: #a28db4;
+  background: var(--soft);
+  border-color: var(--muted);
+  color: var(--muted);
 }
 .green .topic-tag {
-  background: #f0f5ee;
-  border-color: #e5ede1;
+  background: var(--soft);
+  border-color: var(--muted);
   color: #8a9e82;
 }
 .blue .topic-tag {
-  background: #f0f5fa;
-  border-color: #e5ecf4;
-  color: #8e9eb0;
+  background: var(--soft);
+  border-color: var(--muted);
+  color: var(--muted);
 }
 .topic-card > h3 {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 750;
   letter-spacing: -0.4px;
 }
 .topic-card > p {
-  font-size: 10px;
-  color: #968e9a;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-top: 6px;
   line-height: 1.5;
   min-height: 16px;
@@ -600,13 +600,13 @@ main {
   padding: 10px 0;
 }
 .lesson-link:hover {
-  background: #f9f6fc;
+  background: var(--soft);
 }
 .lesson-number {
-  font-size: 9px;
-  color: #a09aa6;
-  background: #f6f5f7;
-  border: 1px solid #eeeaf2;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--soft);
+  border: 1px solid var(--border);
   width: 24px;
   height: 27px;
   border-radius: 5px;
@@ -617,23 +617,23 @@ main {
 }
 .lesson-number.done {
   color: #609070;
-  background: #e8f4ec;
+  background: var(--soft);
 }
 .lesson-link > span:nth-child(2) {
   flex: 1;
   min-width: 0;
 }
 .lesson-link strong {
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 550;
   line-height: 1.6;
   display: block;
-  color: #5e5569;
+  color: var(--accent);
 }
 .lesson-link small {
   display: block;
-  font-size: 8px;
-  color: #a59cae;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-top: 3px;
 }
 .lesson-link small span {
@@ -642,17 +642,17 @@ main {
 .lesson-link > .icon {
   width: 12px;
   height: 12px;
-  color: #b4aabb;
+  color: var(--muted);
 }
 .card-bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid #f1edf3;
+  border-top: 1px solid var(--border);
   margin-top: 9px;
   padding: 12px 0;
-  font-size: 8px;
-  color: #a69eac;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .card-bottom > span:last-child {
   display: flex;
@@ -662,7 +662,7 @@ main {
 .card-bottom .icon {
   width: 11px;
   height: 11px;
-  color: #a7b29e;
+  color: var(--muted);
 }
 .dashboard-aside {
   padding-top: 0;
@@ -681,16 +681,16 @@ main {
 .aside-title .icon {
   width: 18px;
   height: 18px;
-  color: #8e78b3;
+  color: var(--muted);
 }
 .aside-title h3 {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: -0.3px;
 }
 .journey-card > p {
-  font-size: 10px;
-  color: #aaa0b1;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-top: 7px;
 }
 .progress-stat {
@@ -701,30 +701,30 @@ main {
 }
 .progress-stat > b {
   font-family: "Manrope", var(--font);
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -1px;
 }
 .progress-stat > b > span {
-  font-size: 13px;
-  color: #bcb2c7;
+  font-size: 0.8125rem;
+  color: var(--muted);
   font-weight: 500;
   letter-spacing: 0;
 }
 .progress-stat > span {
-  font-size: 8px;
-  color: #aba1b3;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .progress-track {
   height: 5px;
-  background: #eeebf1;
+  background: var(--soft);
   border-radius: 10px;
   overflow: hidden;
 }
 .progress-track > span {
   height: 100%;
   display: block;
-  background: #9a80c9;
+  background: var(--accent);
   border-radius: 10px;
   transition: width 0.3s;
 }
@@ -745,50 +745,50 @@ main {
   content: "";
   position: absolute;
   height: 27px;
-  border-left: 1px dashed #e5dfeb;
+  border-left: 1px dashed var(--border);
   left: 14px;
   bottom: -1px;
 }
 .path-node {
   width: 29px;
   height: 29px;
-  border: 1px solid #eeebf1;
+  border: 1px solid var(--border);
   display: grid;
   place-items: center;
-  font-size: 9px;
-  color: #b4aabb;
-  background: #faf9fb;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--soft);
   border-radius: 50%;
   flex-shrink: 0;
 }
 .path-node.current {
-  color: #8a6eb1;
-  background: #f0e9f9;
-  border-color: #e3d7f0;
+  color: var(--accent);
+  background: var(--soft);
+  border-color: var(--muted);
 }
 .path-node.done {
   color: var(--green);
-  background: #e8f2ec;
+  background: var(--soft);
 }
 .path-item strong {
   display: block;
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 550;
-  color: #84798f;
+  color: var(--accent);
 }
 .path-item small {
   display: block;
-  color: #b7adbe;
-  font-size: 8px;
+  color: var(--muted);
+  font-size: 0.75rem;
   margin-top: 5px;
 }
 .gentle-note {
-  border-top: 1px solid #f0ebf4;
+  border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #b3a5be;
-  font-size: 8px;
+  color: var(--muted);
+  font-size: 0.75rem;
   margin-top: 16px;
   padding: 16px 0;
 }
@@ -798,10 +798,10 @@ main {
 }
 .lab-teaser {
   margin-top: 18px;
-  border: 1px solid #e9e5df;
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 21px;
-  background: #f4f1eb;
+  background: var(--soft);
 }
 .teaser-icon {
   display: inline-flex;
@@ -809,7 +809,7 @@ main {
   height: 30px;
   align-items: center;
   justify-content: center;
-  background: #ece6da;
+  background: var(--accent-soft);
   border-radius: 9px;
   color: #a89774;
 }
@@ -818,7 +818,7 @@ main {
   height: 18px;
 }
 .lab-teaser h3 {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   margin-top: 13px;
   line-height: 1.6;
@@ -826,13 +826,13 @@ main {
   max-width: 180px;
 }
 .lab-teaser p {
-  font-size: 10px;
-  color: #9b9186;
+  font-size: 0.75rem;
+  color: var(--accent);
   margin-top: 8px;
   line-height: 1.85;
 }
 .lab-teaser .text-button {
-  font-size: 10px;
+  font-size: 0.75rem;
   margin-top: 12px;
   color: #9b8160;
 }
@@ -841,15 +841,15 @@ main {
   height: 14px;
 }
 .coming-soon {
-  border-top: 1px solid #e9e5e9;
+  border-top: 1px solid var(--border);
   margin-top: 38px;
   padding-top: 29px;
 }
 .coming-soon .section-heading h2 {
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 .coming-soon .section-heading p {
-  font-size: 10px;
+  font-size: 0.75rem;
 }
 .future-grid {
   display: grid;
@@ -860,8 +860,8 @@ main {
 .future-card {
   display: flex;
   gap: 16px;
-  background: #f7f5f2;
-  border: 1px solid #eae6e2;
+  background: var(--soft);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 20px;
 }
@@ -870,21 +870,21 @@ main {
   place-items: center;
   height: 34px;
   width: 34px;
-  background: #eeebe6;
-  color: #b2a99d;
-  border: 1px solid #e5e0d9;
+  background: var(--soft);
+  color: var(--muted);
+  border: 1px solid var(--border);
   border-radius: 9px;
-  font-size: 10px;
+  font-size: 0.75rem;
   flex-shrink: 0;
 }
 .future-card h3 {
-  font-size: 12px;
+  font-size: 0.75rem;
   letter-spacing: -0.2px;
-  color: #8f8794;
+  color: var(--accent);
 }
 .future-card p {
-  font-size: 10px;
-  color: #aaa1ad;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-top: 6px;
 }
 .future-card details {
@@ -892,8 +892,8 @@ main {
 }
 .future-card summary {
   cursor: pointer;
-  font-size: 9px;
-  color: #9d93a5;
+  font-size: 0.75rem;
+  color: var(--muted);
   list-style: none;
   display: inline-flex;
   align-items: center;
@@ -916,15 +916,15 @@ main {
 }
 .future-card li strong {
   display: block;
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 550;
-  color: #796d87;
+  color: var(--accent);
 }
 .future-card li span {
   display: block;
-  font-size: 10px;
+  font-size: 0.75rem;
   line-height: 1.7;
-  color: #a294ad;
+  color: var(--muted);
   margin-top: 3px;
 }
 footer {
@@ -933,8 +933,8 @@ footer {
   align-items: center;
   gap: 20px;
   padding: 31px 0 26px;
-  font-size: 9px;
-  color: #b7afba;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 footer > span:last-child {
   display: flex;
@@ -947,22 +947,22 @@ footer .icon {
 }
 .footer-brand {
   font-family: "Manrope", var(--font);
-  font-size: 18px;
+  font-size: 1.125rem;
   letter-spacing: -1px;
   font-weight: 800;
-  color: #b6a9c7;
+  color: var(--muted);
 }
 /* Lessons */
 .lesson-breadcrumb {
   display: flex;
   align-items: center;
   gap: 16px;
-  font-size: 11px;
-  color: #a399ad;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin: 5px 0 27px;
 }
 .lesson-breadcrumb .text-button {
-  font-size: 11px;
+  font-size: 0.75rem;
 }
 .lesson-layout {
   display: grid;
@@ -971,25 +971,25 @@ footer .icon {
   padding-bottom: 45px;
 }
 .lesson-sidebar {
-  background: #f4f0f8;
-  border: 1px solid #e8e1f0;
+  background: var(--soft);
+  border: 1px solid var(--border);
   border-radius: 13px;
   padding: 25px;
   height: fit-content;
 }
 .lesson-sidebar > .eyebrow {
   margin-top: 22px;
-  font-size: 9px;
+  font-size: 0.75rem;
   letter-spacing: 1px;
 }
 .lesson-sidebar > h2 {
-  font-size: 20px;
+  font-size: 1.25rem;
   line-height: 1.5;
   margin-top: 7px;
 }
 .lesson-sidebar > p {
-  color: #9a8aa7;
-  font-size: 11px;
+  color: var(--muted);
+  font-size: 0.75rem;
   margin-top: 10px;
 }
 .mini-progress {
@@ -997,8 +997,8 @@ footer .icon {
 }
 .mini-progress > span {
   display: block;
-  font-size: 10px;
-  color: #9b89ab;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-bottom: 8px;
 }
 .sidebar-example {
@@ -1006,16 +1006,16 @@ footer .icon {
   display: flex;
   align-items: center;
   gap: 9px;
-  border: 1px solid #e7deed;
+  border: 1px solid var(--border);
   background: transparent;
   width: 100%;
   border-radius: 7px;
-  font-size: 11px;
-  color: #9983ab;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .sidebar-example.selected {
-  background: #e9dff4;
-  color: #795999;
+  background: var(--soft);
+  color: var(--accent);
 }
 .sidebar-example .icon {
   width: 15px;
@@ -1028,24 +1028,24 @@ footer .icon {
   margin-top: 15px;
 }
 .question-dot {
-  border: 1px solid #e6ddee;
+  border: 1px solid var(--border);
   border-radius: 7px;
-  background: #f8f5fc;
-  color: #9f8daf;
+  background: var(--soft);
+  color: var(--muted);
   height: 35px;
-  font-size: 11px;
+  font-size: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .question-dot.selected {
-  border-color: #9172b8;
+  border-color: var(--muted);
   box-shadow: 0 0 0 2px #e5d9f4;
 }
 .question-dot.solved {
-  background: #e5f0e7;
+  background: var(--soft);
   color: #608c6b;
-  border-color: #d5e5d8;
+  border-color: var(--muted);
 }
 .question-dot .icon {
   width: 16px;
@@ -1054,8 +1054,8 @@ footer .icon {
 .sidebar-tip {
   margin-top: 26px;
   padding-top: 20px;
-  border-top: 1px solid #e5dbed;
-  color: #a08aaf;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
 }
 .sidebar-tip > .icon {
   display: block;
@@ -1064,19 +1064,19 @@ footer .icon {
   height: 20px;
 }
 .sidebar-tip strong {
-  font-size: 11px;
+  font-size: 0.75rem;
   line-height: 1.7;
   display: block;
   font-weight: 550;
 }
 .sidebar-tip p {
-  font-size: 10px;
+  font-size: 0.75rem;
   margin-top: 7px;
 }
 .sidebar-tip .text-button {
-  font-size: 10px;
+  font-size: 0.75rem;
   margin-top: 12px;
-  color: #86659d;
+  color: var(--accent);
 }
 .lesson-workspace {
   background: white;
@@ -1092,36 +1092,36 @@ footer .icon {
   gap: 12px;
 }
 .workspace-top .eyebrow {
-  font-size: 9px;
+  font-size: 0.75rem;
   letter-spacing: 1.1px;
 }
 .workspace-top .badge {
-  background: #f0f5ee;
+  background: var(--soft);
   color: #8d9d82;
-  font-size: 9px;
+  font-size: 0.75rem;
 }
 .lesson-workspace h1 {
-  font-size: 29px;
+  font-size: 1.8125rem;
   line-height: 1.4;
   margin-top: 27px;
   font-weight: 700;
   letter-spacing: -1px;
 }
 .workspace-intro {
-  font-size: 12px;
-  color: #968b9f;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-top: 9px;
 }
 .rule-callout {
-  background: #f8f6fb;
-  border: 1px solid #eee7f5;
+  background: var(--soft);
+  border: 1px solid var(--border);
   border-radius: 9px;
   padding: 14px;
   display: flex;
   align-items: flex-start;
   gap: 10px;
   margin-top: 24px;
-  color: #8a789a;
+  color: var(--accent);
 }
 .rule-callout .icon {
   width: 17px;
@@ -1129,7 +1129,7 @@ footer .icon {
   margin-top: 2px;
 }
 .rule-callout p {
-  font-size: 11px;
+  font-size: 0.75rem;
   line-height: 1.9;
 }
 .example-equation {
@@ -1138,14 +1138,14 @@ footer .icon {
   justify-content: center;
   gap: 20px;
   padding: 30px 0;
-  font-size: 29px;
-  color: #70538e;
+  font-size: 1.8125rem;
+  color: var(--accent);
 }
 .example-equation math {
-  font-size: 32px;
+  font-size: 2rem;
 }
 .example-equation > span {
-  color: #b2a4be;
+  color: var(--muted);
 }
 .example-steps {
   margin: 0;
@@ -1163,35 +1163,35 @@ footer .icon {
 .example-steps li > span {
   display: grid;
   place-items: center;
-  background: #f1ebf8;
-  color: #a38abc;
+  background: var(--soft);
+  color: var(--muted);
   height: 25px;
   width: 25px;
   border-radius: 50%;
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 0.75rem;
 }
 .example-steps p {
-  font-size: 12px;
-  color: #80738a;
+  font-size: 0.75rem;
+  color: var(--accent);
   line-height: 1.8;
 }
 .workspace-bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid #eee9f2;
+  border-top: 1px solid var(--border);
   margin-top: 30px;
   padding-top: 21px;
   gap: 16px;
 }
 .workspace-bottom > span {
-  font-size: 11px;
-  color: #b1a4ba;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .practice-equation {
-  background: #faf8fd;
-  border: 1px solid #eee8f5;
+  background: var(--soft);
+  border: 1px solid var(--border);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -1203,15 +1203,15 @@ footer .icon {
   margin: 25px 0;
 }
 .practice-equation math {
-  font-size: 37px;
-  color: #6d518c;
+  font-size: 2.3125rem;
+  color: var(--accent);
 }
 .practice-equation .context-note {
   display: block;
   width: 100%;
   text-align: center;
-  font-size: 12px;
-  color: #9d87b1;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .math-text {
   font-family: Cambria, serif;
@@ -1225,40 +1225,40 @@ math {
 }
 #answer-form > label {
   display: block;
-  font-size: 12px;
-  color: #80708e;
+  font-size: 0.75rem;
+  color: var(--accent);
   font-weight: 550;
   margin-bottom: 9px;
 }
 #answer-form > label span {
   font-weight: 400;
-  color: #b1a2bc;
+  color: var(--muted);
 }
 .answer-row {
   display: flex;
   gap: 10px;
 }
 .answer-row input {
-  border: 1px solid #ded5e8;
+  border: 1px solid var(--border);
   border-radius: 8px;
   min-width: 0;
   flex: 1;
   padding: 12px 14px;
-  color: #685777;
+  color: var(--accent);
   background: white;
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 .answer-row input::placeholder {
-  font-size: 12px;
-  color: #b9adbf;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .answer-row .btn {
-  font-size: 11px;
+  font-size: 0.75rem;
 }
 #answer-format {
   display: block;
-  font-size: 9px;
-  color: #b0a1bb;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-top: 10px;
   line-height: 1.7;
 }
@@ -1268,7 +1268,7 @@ math {
   gap: 10px;
   padding: 13px;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 0.75rem;
   margin-top: 16px;
   line-height: 1.7;
 }
@@ -1277,11 +1277,11 @@ math {
   height: 18px;
 }
 .feedback.success {
-  background: #edf5ee;
+  background: var(--soft);
   color: #64826a;
 }
 .feedback.retry {
-  background: #fbf3e7;
+  background: var(--soft);
   color: #a4885a;
 }
 .help-row {
@@ -1292,34 +1292,34 @@ math {
   flex-wrap: wrap;
 }
 .help-row .text-button {
-  font-size: 10px;
+  font-size: 0.75rem;
 }
 .help-row .icon {
   width: 14px;
   height: 14px;
 }
 .hint-box {
-  background: #f7f3fb;
-  border: 1px solid #ebe2f3;
+  background: var(--soft);
+  border: 1px solid var(--border);
   border-radius: 9px;
   padding: 16px;
   margin-top: 14px;
-  color: #8c779c;
-  font-size: 12px;
+  color: var(--accent);
+  font-size: 0.75rem;
 }
 .hint-box > strong {
   font-weight: 600;
-  font-size: 11px;
+  font-size: 0.75rem;
 }
 .hint-box > p {
   margin-top: 6px;
-  font-size: 11px;
+  font-size: 0.75rem;
   line-height: 1.9;
 }
 .hint-box > small {
   display: block;
-  font-size: 9px;
-  color: #ab95bb;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-top: 8px;
 }
 .solution-answer {
@@ -1327,25 +1327,25 @@ math {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 /* The visual lab */
 .page-heading {
   margin: 16px 0 30px;
 }
 .page-heading .eyebrow {
-  font-size: 9px;
+  font-size: 0.75rem;
   letter-spacing: 1.4px;
 }
 .page-heading h1 {
-  font-size: 35px;
+  font-size: 2.1875rem;
   margin-top: 10px;
   letter-spacing: -1.5px;
   line-height: 1.4;
 }
 .page-heading p {
-  font-size: 12px;
-  color: #9d91a7;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-top: 9px;
 }
 .lab-heading {
@@ -1358,11 +1358,11 @@ math {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #a38ab6;
-  background: #f0eaf7;
+  color: var(--muted);
+  background: var(--soft);
   border-radius: 8px;
   padding: 9px 12px;
-  font-size: 10px;
+  font-size: 0.75rem;
 }
 .lab-heading-badge .icon {
   width: 15px;
@@ -1374,11 +1374,11 @@ math {
   gap: 10px;
   padding: 12px 18px;
   margin-bottom: 15px;
-  background: #f0ecf7;
-  border: 1px solid #e6dcef;
+  background: var(--soft);
+  border: 1px solid var(--border);
   border-radius: 9px;
-  color: #8b729f;
-  font-size: 11px;
+  color: var(--accent);
+  font-size: 0.75rem;
 }
 .return-banner > .icon {
   width: 16px;
@@ -1386,20 +1386,20 @@ math {
 }
 .return-banner .text-button {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 0.75rem;
 }
 .tool-layout {
   display: grid;
   grid-template-columns: 205px minmax(0, 1fr);
   background: #fff;
-  border: 1px solid #e8e2ed;
+  border: 1px solid var(--border);
   border-radius: 13px;
   overflow: hidden;
   min-height: 520px;
 }
 .tool-nav {
-  background: #f8f6fa;
-  border-right: 1px solid #eae3f1;
+  background: var(--soft);
+  border-right: 1px solid var(--border);
   padding: 18px 13px;
   display: flex;
   flex-direction: column;
@@ -1414,8 +1414,8 @@ math {
   border: 1px solid transparent;
   background: transparent;
   border-radius: 8px;
-  color: #9b8ba8;
-  font-size: 11px;
+  color: var(--muted);
+  font-size: 0.75rem;
   text-align: left;
 }
 .tool-tab > .icon {
@@ -1426,23 +1426,23 @@ math {
   margin-left: auto;
   width: 11px;
   height: 11px;
-  color: #b5a5c3;
+  color: var(--muted);
 }
 .tool-tab.selected {
-  background: #eee6f8;
-  border-color: #e7dcf1;
-  color: #8864aa;
+  background: var(--soft);
+  border-color: var(--muted);
+  color: var(--accent);
   font-weight: 600;
 }
 .tool-tab:hover {
-  background: #f0eaf7;
+  background: var(--soft);
 }
 .tool-nav-note {
   margin-top: auto;
   padding: 30px 8px 10px;
-  font-size: 10px;
+  font-size: 0.75rem;
   line-height: 1.8;
-  color: #baacc5;
+  color: var(--muted);
 }
 .tool-nav-note .icon {
   display: block;
@@ -1455,13 +1455,13 @@ math {
   min-width: 0;
 }
 .tool-heading h2 {
-  font-size: 23px;
+  font-size: 1.4375rem;
   font-weight: 700;
   letter-spacing: -0.8px;
 }
 .tool-heading p {
-  font-size: 11px;
-  color: #a18eaf;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-top: 7px;
   line-height: 1.8;
 }
@@ -1479,45 +1479,45 @@ math {
   min-width: 0;
 }
 .number-field > span {
-  font-size: 10px;
-  color: #9a84aa;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .number-field input,
 .number-field select {
   width: 112px;
   background: #fff;
-  border: 1px solid #ded3e9;
+  border: 1px solid var(--border);
   border-radius: 7px;
   padding: 10px 12px;
-  color: #78578f;
+  color: var(--accent);
   height: 43px;
-  font-size: 17px;
+  font-size: 1.0625rem;
 }
 .number-field select {
-  font-size: 12px;
+  font-size: 0.75rem;
   width: 138px;
 }
 .operation-equals {
   padding: 10px 0;
-  font-size: 21px;
-  color: #b5a2c5;
+  font-size: 1.3125rem;
+  color: var(--muted);
 }
 .result-pill {
   padding: 9px 16px;
-  background: #efe7f8;
-  border: 1px solid #e5d8f1;
+  background: var(--soft);
+  border: 1px solid var(--border);
   border-radius: 8px;
   height: 43px;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 550;
-  color: #865eaa;
+  color: var(--accent);
   min-width: 63px;
   text-align: center;
 }
 .number-line-stage {
   margin-top: 24px;
-  background: #fcfbfd;
-  border: 1px solid #f0e9f5;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 11px;
   padding: 17px 15px 14px;
 }
@@ -1525,8 +1525,8 @@ math {
   display: flex;
   justify-content: flex-end;
   gap: 16px;
-  font-size: 9px;
-  color: #ae9dbb;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .line-legend > span {
   display: flex;
@@ -1540,10 +1540,10 @@ math {
   display: inline-block;
 }
 .start-dot {
-  background: #d3c5eb;
+  background: var(--accent-soft);
 }
 .end-dot {
-  background: #7656c6;
+  background: var(--accent);
 }
 .interactive-line {
   width: 100%;
@@ -1559,12 +1559,12 @@ math {
   margin-top: 7px;
 }
 .line-step-controls > span {
-  font-size: 10px;
-  color: #b6a3c3;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-left: 8px;
 }
 .line-step-controls .btn {
-  font-size: 10px;
+  font-size: 0.75rem;
   padding: 7px 10px;
 }
 .line-step-controls .icon {
@@ -1575,12 +1575,12 @@ math {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  background: #f6f2fa;
-  border: 1px solid #ece3f3;
+  background: var(--soft);
+  border: 1px solid var(--border);
   border-radius: 9px;
   padding: 15px 17px;
   margin-top: 22px;
-  color: #a186b5;
+  color: var(--muted);
 }
 .visual-explanation > .icon {
   width: 17px;
@@ -1588,12 +1588,12 @@ math {
   margin-top: 2px;
 }
 .visual-explanation strong {
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #8c6da4;
+  color: var(--accent);
 }
 .visual-explanation p {
-  font-size: 10px;
+  font-size: 0.75rem;
   line-height: 1.9;
   margin-top: 5px;
 }
@@ -1605,20 +1605,20 @@ math {
   margin-top: 22px;
 }
 .try-presets > span {
-  font-size: 9px;
-  color: #b3a1c0;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-right: 3px;
 }
 .preset {
-  font-size: 10px;
+  font-size: 0.75rem;
   padding: 6px 10px;
-  border: 1px solid #e9dfef;
+  border: 1px solid var(--border);
   border-radius: 6px;
   background: #fff;
-  color: #a18bb1;
+  color: var(--muted);
 }
 .preset:hover {
-  background: #f4edf9;
+  background: var(--soft);
 }
 .lab-bottom {
   display: flex;
@@ -1626,7 +1626,7 @@ math {
   justify-content: space-between;
   gap: 35px;
   padding: 25px 0 40px;
-  color: #ad9cb9;
+  color: var(--muted);
 }
 .lab-bottom > div {
   display: flex;
@@ -1639,14 +1639,14 @@ math {
   margin-top: 3px;
 }
 .lab-bottom p {
-  font-size: 10px;
+  font-size: 0.75rem;
   line-height: 1.9;
 }
 .lab-bottom p strong {
   font-weight: 550;
 }
 .lab-bottom > span {
-  font-size: 10px;
+  font-size: 0.75rem;
   max-width: 300px;
   line-height: 1.9;
   text-align: right;
@@ -1664,17 +1664,17 @@ math {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 0.75rem;
 }
 .counter-heading b {
-  font-size: 15px;
-  color: #a690b4;
+  font-size: 0.9375rem;
+  color: var(--muted);
 }
 .positive-text {
   color: #779782;
 }
 .negative-text {
-  color: #aa84bc;
+  color: var(--muted);
 }
 .counter-tray {
   display: flex;
@@ -1682,8 +1682,8 @@ math {
   align-content: flex-start;
   flex-wrap: wrap;
   min-height: 170px;
-  background: #fcfbfd;
-  border: 1px solid #eee7f3;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 9px;
   padding: 15px;
   margin-top: 12px;
@@ -1695,23 +1695,23 @@ math {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  font-size: 21px;
+  font-size: 1.3125rem;
   border: 1px solid;
   box-shadow: 0 2px 2px #00000004;
 }
 .counter.positive {
-  background: #e5f1e8;
+  background: var(--soft);
   color: #6d977a;
   border-color: #c7dfcf;
 }
 .counter.negative {
-  background: #efe4f7;
-  color: #a281b8;
-  border-color: #dfcbed;
+  background: var(--soft);
+  color: var(--muted);
+  border-color: var(--muted);
 }
 .empty-tray {
-  color: #c1b1ca;
-  font-size: 10px;
+  color: var(--muted);
+  font-size: 0.75rem;
   align-self: center;
   margin: auto;
 }
@@ -1722,14 +1722,14 @@ math {
   justify-content: space-between;
 }
 .counter-buttons .btn {
-  font-size: 9px;
+  font-size: 0.75rem;
   padding: 7px 8px;
 }
 .counter-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #faf7fd;
+  background: var(--soft);
   border-radius: 9px;
   padding: 15px;
   margin-top: 22px;
@@ -1738,18 +1738,18 @@ math {
   display: flex;
   align-items: center;
   gap: 15px;
-  color: #a18bb3;
-  font-size: 18px;
+  color: var(--muted);
+  font-size: 1.125rem;
 }
 .counter-summary math {
-  font-size: 22px;
+  font-size: 1.375rem;
 }
 .counter-summary strong {
-  color: #8665a0;
+  color: var(--accent);
 }
 .counter-summary > span {
-  font-size: 10px;
-  color: #ad98bd;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .counter-actions {
   display: flex;
@@ -1758,16 +1758,16 @@ math {
   margin-top: 15px;
 }
 .counter-actions .btn {
-  font-size: 10px;
+  font-size: 0.75rem;
   padding: 10px 11px;
 }
 .counter-actions .text-button {
-  font-size: 10px;
+  font-size: 0.75rem;
   margin-left: auto;
 }
 .fraction-slash {
-  font-size: 24px;
-  color: #bda6cc;
+  font-size: 1.5rem;
+  color: var(--muted);
   padding-bottom: 9px;
 }
 .fraction-values {
@@ -1776,13 +1776,13 @@ math {
   gap: 15px;
   margin-left: auto;
   padding-bottom: 8px;
-  color: #a188b1;
+  color: var(--muted);
 }
 .fraction-values math {
-  font-size: 30px;
+  font-size: 1.875rem;
 }
 .fraction-values > span {
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .fraction-stage {
   margin-top: 28px;
@@ -1794,8 +1794,8 @@ math {
   padding: 2px;
 }
 .fraction-row > span {
-  font-size: 9px;
-  color: #b09ebc;
+  font-size: 0.75rem;
+  color: var(--muted);
   display: block;
   margin-bottom: 6px;
 }
@@ -1804,22 +1804,22 @@ math {
   gap: 3px;
   height: 64px;
   padding: 4px;
-  border: 1px solid #e2d4ec;
-  background: #f6f0fb;
+  border: 1px solid var(--border);
+  background: var(--soft);
   border-radius: 8px;
 }
 .fraction-piece {
-  border: 1px solid #ede4f5;
+  border: 1px solid var(--border);
   background: #fff;
   border-radius: 3px;
   min-width: 0;
 }
 .fraction-piece.filled {
-  background: #bba1d8;
-  border-color: #a58ac3;
+  background: var(--accent);
+  border-color: var(--muted);
 }
 .fraction-piece:hover {
-  background: #dbc9eb;
+  background: var(--accent-soft);
 }
 .wide-slider {
   width: 100%;
@@ -1843,44 +1843,44 @@ math {
   aspect-ratio: 1;
 }
 .grid-cell {
-  background: #f3edf8;
-  border: 1px solid #e8ddf0;
+  background: var(--soft);
+  border: 1px solid var(--border);
   border-radius: 3px;
   padding: 0;
   aspect-ratio: 1;
 }
 .grid-cell.filled {
-  background: #b7a0d0;
-  border-color: #aa90c6;
+  background: var(--accent);
+  border-color: var(--muted);
 }
 .grid-cell:hover {
-  background: #ceb8e3;
+  background: var(--accent-soft);
 }
 .percent-equivalent {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  color: #a38cb4;
+  color: var(--muted);
   margin-top: 17px;
 }
 .percent-equivalent > strong {
   font-family: "Manrope", var(--font);
-  font-size: 35px;
-  color: #9374ae;
+  font-size: 2.1875rem;
+  color: var(--accent);
   letter-spacing: -1px;
 }
 .percent-equivalent > span {
-  font-size: 21px;
+  font-size: 1.3125rem;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 .percent-equivalent math {
-  font-size: 25px;
+  font-size: 1.5625rem;
 }
 .percent-values > p {
-  font-size: 10px;
-  color: #b09bbf;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-top: 15px;
   line-height: 1.9;
 }
@@ -1892,18 +1892,18 @@ math {
 }
 .factor-card {
   padding: 18px;
-  background: #faf7fd;
-  border: 1px solid #eee4f5;
+  background: var(--soft);
+  border: 1px solid var(--border);
   border-radius: 10px;
 }
 .factor-card .eyebrow {
-  font-size: 8px;
+  font-size: 0.75rem;
   letter-spacing: 1px;
-  color: #b39dc2;
+  color: var(--muted);
 }
 .factor-card h3 {
-  font-size: 32px;
-  color: #9676ad;
+  font-size: 2rem;
+  color: var(--accent);
   margin-top: 6px;
 }
 .prime-chips {
@@ -1912,24 +1912,24 @@ math {
   flex-wrap: wrap;
   gap: 7px;
   margin-top: 14px;
-  color: #bea9cb;
-  font-size: 13px;
+  color: var(--muted);
+  font-size: 0.8125rem;
   min-height: 28px;
 }
 .prime-chips b {
-  font-size: 13px;
+  font-size: 0.8125rem;
   border-radius: 6px;
-  background: #e9ddf4;
-  color: #9a7ab2;
+  background: var(--soft);
+  color: var(--muted);
   padding: 5px 9px;
   font-weight: 500;
 }
 .prime-chips > span:only-child {
-  font-size: 10px;
+  font-size: 0.75rem;
 }
 .factor-card > small {
-  font-size: 9px;
-  color: #b6a1c4;
+  font-size: 0.75rem;
+  color: var(--muted);
   display: block;
   margin-top: 19px;
 }
@@ -1940,14 +1940,14 @@ math {
   margin-top: 10px;
 }
 .factor-list > span {
-  font-size: 10px;
-  color: #bfadca;
+  font-size: 0.75rem;
+  color: var(--muted);
   padding: 3px 6px;
   border-radius: 4px;
-  background: #f0e9f5;
+  background: var(--soft);
 }
 .factor-list .shared {
-  background: #e3eee4;
+  background: var(--soft);
   color: #839c86;
 }
 .factor-results {
@@ -1959,23 +1959,23 @@ math {
 .factor-results > div {
   display: flex;
   flex-direction: column;
-  border: 1px solid #eee5f4;
+  border: 1px solid var(--border);
   border-radius: 9px;
   padding: 15px;
 }
 .factor-results span {
-  font-size: 10px;
-  color: #aa91ba;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .factor-results strong {
-  font-size: 29px;
+  font-size: 1.8125rem;
   font-weight: 500;
-  color: #9673b0;
+  color: var(--accent);
   margin-top: 5px;
 }
 .factor-results small {
-  font-size: 9px;
-  color: #b9a3c8;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-top: 5px;
 }
 .calculator-layout {
@@ -1985,41 +1985,41 @@ math {
   margin-top: 25px;
 }
 .calculator {
-  background: #f8f4fc;
-  border: 1px solid #e8dcef;
+  background: var(--soft);
+  border: 1px solid var(--border);
   border-radius: 13px;
   padding: 18px;
 }
 .calculator > label {
   display: block;
-  font-size: 9px;
-  color: #b299c3;
+  font-size: 0.75rem;
+  color: var(--muted);
   margin-bottom: 9px;
 }
 #calc-input {
   width: 100%;
   border: 0;
-  border-bottom: 1px solid #e5d8ee;
+  border-bottom: 1px solid var(--border);
   background: transparent;
-  color: #9470ae;
-  font-size: 17px;
+  color: var(--accent);
+  font-size: 1.0625rem;
   padding: 10px 0;
   min-width: 0;
 }
 #calc-input::placeholder {
-  color: #c2acce;
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 0.75rem;
 }
 .calculator-result {
-  font-size: 31px;
+  font-size: 1.9375rem;
   text-align: right;
   min-height: 64px;
   padding: 15px 0 12px;
-  color: #87649f;
+  color: var(--accent);
   overflow-wrap: anywhere;
 }
 .calculator-result.calc-error {
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.8;
   color: #b18470;
 }
@@ -2029,19 +2029,19 @@ math {
   gap: 7px;
 }
 .calc-key {
-  font-size: 16px;
+  font-size: 1rem;
   background: #fff;
-  border: 1px solid #eaddf2;
-  color: #a38ab4;
+  border: 1px solid var(--border);
+  color: var(--muted);
   border-radius: 7px;
   padding: 12px 4px;
 }
 .calc-key:hover {
-  background: #eee4f7;
+  background: var(--soft);
 }
 .calc-key.operator {
-  background: #eee4f7;
-  color: #a17bbd;
+  background: var(--soft);
+  color: var(--muted);
 }
 .calc-key.equals {
   background: var(--purple);
@@ -2050,45 +2050,45 @@ math {
 }
 .calculator-guide {
   padding: 7px 0;
-  color: #ac95bc;
-  font-size: 11px;
+  color: var(--muted);
+  font-size: 0.75rem;
   min-width: 0;
 }
 .stat-icon {
   height: 35px;
   width: 35px;
   border-radius: 9px;
-  background: #f0e8f8;
+  background: var(--soft);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #b295c6;
+  color: var(--muted);
 }
 .stat-icon .icon {
   width: 20px;
   height: 20px;
 }
 .calculator-guide h3 {
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.7;
-  color: #9b7cab;
+  color: var(--accent);
   margin: 13px 0 9px;
   letter-spacing: -0.2px;
 }
 .calculator-guide p {
-  font-size: 11px;
+  font-size: 0.75rem;
   line-height: 1.9;
   margin-bottom: 14px;
 }
 .calculator-guide > div {
   margin: 15px 0;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .calculator-guide math {
-  font-size: 19px;
+  font-size: 1.1875rem;
 }
 .calculator-guide small {
-  font-size: 9px;
+  font-size: 0.75rem;
   line-height: 1.9;
   display: block;
 }
@@ -2101,7 +2101,7 @@ math {
 .stats-grid > div {
   position: relative;
   background: white;
-  border: 1px solid #ebe2f2;
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 23px;
   display: flex;
@@ -2110,15 +2110,15 @@ math {
 }
 .stats-grid b {
   font-family: "Manrope", var(--font);
-  font-size: 35px;
+  font-size: 2.1875rem;
   font-weight: 650;
-  color: #9576ad;
+  color: var(--accent);
   letter-spacing: -1px;
 }
 .stats-grid b small {
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 400;
-  color: #c4adcf;
+  color: var(--muted);
 }
 .stats-grid .stat-icon {
   position: absolute;
@@ -2126,8 +2126,8 @@ math {
   top: 20px;
 }
 .stats-grid > div > span:last-child {
-  font-size: 11px;
-  color: #b39cc1;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .progress-lessons {
   margin: 28px 0;
@@ -2140,7 +2140,7 @@ math {
   gap: 18px;
   align-items: center;
   background: white;
-  border: 1px solid #e9e1ee;
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 17px 20px;
 }
@@ -2148,13 +2148,13 @@ math {
   flex: 1;
 }
 .progress-lessons article small {
-  font-size: 9px;
-  color: #b7a0c5;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .progress-lessons h3 {
-  font-size: 13px;
+  font-size: 0.8125rem;
   letter-spacing: -0.1px;
-  color: #8b6c9e;
+  color: var(--accent);
   margin-top: 4px;
 }
 .progress-lessons .progress-track {
@@ -2163,11 +2163,11 @@ math {
   height: 4px;
 }
 .progress-lessons article > span:not(.topic-icon) {
-  font-size: 10px;
-  color: #b4a0c0;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 .progress-lessons .btn {
-  font-size: 10px;
+  font-size: 0.75rem;
   padding: 8px 12px;
   min-width: 100px;
 }
@@ -2175,8 +2175,8 @@ math {
   display: flex;
   gap: 8px;
   align-items: center;
-  font-size: 10px;
-  color: #b5a3c0;
+  font-size: 0.75rem;
+  color: var(--muted);
   line-height: 1.8;
 }
 .save-note .icon {
@@ -2186,7 +2186,7 @@ math {
 .export-btn,
 .import-btn {
   margin: 20px 8px 40px 0;
-  font-size: 10px;
+  font-size: 0.75rem;
   padding: 9px 12px;
 }
 .import-btn {
@@ -2194,10 +2194,10 @@ math {
 }
 .icon-button {
   background: transparent;
-  border: 1px solid #e7dbef;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 7px;
-  color: #ac95bb;
+  color: var(--muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2211,7 +2211,7 @@ dialog {
   width: calc(100% - 70px);
   max-height: calc(100dvh - 60px);
   padding: 0;
-  border: 1px solid #e8deef;
+  border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: 0 20px 90px #38204830;
   overflow: auto;
@@ -2230,13 +2230,13 @@ dialog::backdrop {
   background: #fff;
 }
 .dialog-header .eyebrow {
-  font-size: 8px;
-  color: #b59dc7;
+  font-size: 0.75rem;
+  color: var(--muted);
   letter-spacing: 1.2px;
 }
 .dialog-header h2 {
-  font-size: 23px;
-  color: #826093;
+  font-size: 1.4375rem;
+  color: var(--accent);
   margin-top: 6px;
   letter-spacing: -0.8px;
 }
@@ -2255,8 +2255,8 @@ dialog .tool-panel {
   justify-content: center;
   gap: 6px;
   padding: 15px;
-  color: #b59ac6;
-  font-size: 9px;
+  color: var(--muted);
+  font-size: 0.75rem;
 }
 .dialog-footer .icon {
   width: 12px;
@@ -2267,11 +2267,11 @@ dialog .tool-panel {
   left: 50%;
   bottom: 30px;
   transform: translate(-50%, 15px);
-  background: #4c3b5b;
+  background: var(--accent);
   color: #fff;
   border-radius: 9px;
   padding: 13px 20px;
-  font-size: 12px;
+  font-size: 0.75rem;
   max-width: 90vw;
   opacity: 0;
   pointer-events: none;
@@ -2285,33 +2285,101 @@ dialog .tool-panel {
   transform: translate(-50%, 0);
 }
 /* Keep instructional copy comfortably readable, even on compact screens. */
-.topic-card > h3 { font-size: 17px; }
-.topic-card > p, .journey-card > p, .lab-teaser p, .future-card p {
-  font-size: 12px;
-  color: #7b7185;
+.topic-card > h3 {
+  font-size: 1.0625rem;
 }
-.lesson-link strong { font-size: 12px; color: #62556f; }
-.lesson-link small, .card-bottom { font-size: 10px; color: #807188; }
-.topic-tag { font-size: 10px; }
-.filter { font-size: 11px; color: #81748d; }
-.section-heading .eyebrow { font-size: 9px; }
-.path-item strong { font-size: 12px; color: #75667f; }
-.path-item small { font-size: 10px; color: #8c7b97; }
-.path-item { min-height: 63px; }
-.hero p { font-size: 14px; color: #81738d; }
-.hero-note { font-size: 10px; }
-.workspace-intro, .example-steps p { font-size: 14px; color: #796885; }
-.rule-callout p { font-size: 13px; color: #806a90; }
-.tool-heading p { font-size: 13px; color: #897298; }
-.tool-tab { font-size: 12px; color: #8b729b; }
-.number-field > span { font-size: 11px; color: #8c729d; }
-.visual-explanation strong { font-size: 12px; color: #7e5c96; }
-.visual-explanation p { font-size: 12px; color: #8c709e; }
-.sidebar-tip p, .lesson-sidebar > p { font-size: 12px; color: #897297; }
-.help-row .text-button { font-size: 12px; }
-.hint-box > p { font-size: 13px; color: #876997; }
-.calculator-guide p { font-size: 12px; color: #9478a5; }
-.wide-slider { min-height: 26px; }
+.topic-card > p,
+.journey-card > p,
+.lab-teaser p,
+.future-card p {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.lesson-link strong {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.lesson-link small,
+.card-bottom {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.topic-tag {
+  font-size: 0.75rem;
+}
+.filter {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.section-heading .eyebrow {
+  font-size: 0.75rem;
+}
+.path-item strong {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.path-item small {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.path-item {
+  min-height: 63px;
+}
+.hero p {
+  font-size: 0.875rem;
+  color: var(--accent);
+}
+.hero-note {
+  font-size: 0.75rem;
+}
+.workspace-intro,
+.example-steps p {
+  font-size: 0.875rem;
+  color: var(--accent);
+}
+.rule-callout p {
+  font-size: 0.8125rem;
+  color: var(--accent);
+}
+.tool-heading p {
+  font-size: 0.8125rem;
+  color: var(--accent);
+}
+.tool-tab {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.number-field > span {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.visual-explanation strong {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.visual-explanation p {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.sidebar-tip p,
+.lesson-sidebar > p {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.help-row .text-button {
+  font-size: 0.75rem;
+}
+.hint-box > p {
+  font-size: 0.8125rem;
+  color: var(--accent);
+}
+.calculator-guide p {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.wide-slider {
+  min-height: 26px;
+}
 
 @media (min-width: 1450px) {
   .header-inner {
@@ -2326,10 +2394,10 @@ dialog .tool-panel {
     padding: 42px 46px;
   }
   .hero h1 {
-    font-size: 43px;
+    font-size: 2.6875rem;
   }
   .hero p {
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
   .hero-line {
     max-height: 180px;
@@ -2343,37 +2411,37 @@ dialog .tool-panel {
     padding-right: 24px;
   }
   .topic-card h3 {
-    font-size: 16px;
+    font-size: 1rem;
   }
   .topic-card > p {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
   .lesson-link strong {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
   .lesson-link {
     padding: 11px 0;
   }
   .lesson-link small {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .card-bottom {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .topic-tag {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .aside-title h3 {
-    font-size: 14px;
+    font-size: 0.875rem;
   }
   .path-item strong {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
   .path-item small {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .lab-teaser p {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
 }
 @media (max-width: 1100px) {
@@ -2395,7 +2463,7 @@ dialog .tool-panel {
     margin: 12px 0 0;
   }
   .hero h1 {
-    font-size: 35px;
+    font-size: 2.1875rem;
   }
   .hero {
     padding: 30px;
@@ -2412,21 +2480,21 @@ dialog .tool-panel {
     padding: 18px 16px 0;
   }
   .topic-card > h3 {
-    font-size: 14px;
+    font-size: 0.875rem;
   }
   .topic-tag {
-    font-size: 7px;
+    font-size: 0.75rem;
     padding: 4px 5px;
   }
   .lesson-link strong {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .filter {
-    font-size: 9px;
+    font-size: 0.75rem;
     padding: 6px 8px;
   }
   .section-heading h2 {
-    font-size: 18px;
+    font-size: 1.125rem;
   }
   .tool-layout {
     grid-template-columns: 185px minmax(0, 1fr);
@@ -2454,10 +2522,10 @@ dialog .tool-panel {
     padding: 22px;
   }
   .lesson-workspace h1 {
-    font-size: 25px;
+    font-size: 1.5625rem;
   }
   .tool-heading h2 {
-    font-size: 21px;
+    font-size: 1.3125rem;
   }
   .counter-buttons {
     flex-wrap: wrap;
@@ -2491,7 +2559,7 @@ dialog .tool-panel {
   }
   .nav-item {
     padding: 10px;
-    font-size: 11px;
+    font-size: 0.75rem;
     gap: 6px;
   }
   .header-right .btn span {
@@ -2506,36 +2574,36 @@ dialog .tool-panel {
     min-height: 300px;
   }
   .hero h1 {
-    font-size: 29px;
+    font-size: 1.8125rem;
     letter-spacing: -1px;
   }
   .hero p {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
   .hero .eyebrow {
-    font-size: 7px;
+    font-size: 0.75rem;
   }
   .hero-note {
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   .floating-equation {
-    font-size: 23px;
+    font-size: 1.4375rem;
   }
   .hero-art {
     margin-left: 0;
   }
   .spark-one {
-    font-size: 27px;
+    font-size: 1.6875rem;
     top: 40px;
     left: 14px;
   }
   .spark-two {
     right: 0;
     bottom: 75px;
-    font-size: 22px;
+    font-size: 1.375rem;
   }
   .art-caption {
-    font-size: 7px;
+    font-size: 0.75rem;
   }
   .dashboard-grid {
     grid-template-columns: 1fr;
@@ -2570,10 +2638,10 @@ dialog .tool-panel {
     display: none;
   }
   .path-item strong {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .path-item small {
-    font-size: 7px;
+    font-size: 0.75rem;
   }
   .journey-card {
     padding: 18px 16px 0;
@@ -2589,16 +2657,16 @@ dialog .tool-panel {
     padding: 20px 21px 0;
   }
   .topic-card > h3 {
-    font-size: 15px;
+    font-size: 0.9375rem;
   }
   .topic-card > p {
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   .lesson-link strong {
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   .topic-tag {
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   .coming-soon {
     margin-top: 28px;
@@ -2618,15 +2686,15 @@ dialog .tool-panel {
   .lesson-sidebar > .eyebrow {
     margin: 0;
     align-self: end;
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   .lesson-sidebar > h2 {
     margin: 0;
-    font-size: 17px;
+    font-size: 1.0625rem;
   }
   .lesson-sidebar > p {
     grid-column: 2;
-    font-size: 10px;
+    font-size: 0.75rem;
     margin: 0;
   }
   .mini-progress {
@@ -2634,7 +2702,7 @@ dialog .tool-panel {
     margin: 12px 0 0;
   }
   .mini-progress > span {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .sidebar-example {
     grid-column: 1 / -1;
@@ -2655,10 +2723,10 @@ dialog .tool-panel {
   }
   .lesson-breadcrumb {
     margin: 0 0 20px;
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   .page-heading h1 {
-    font-size: 29px;
+    font-size: 1.8125rem;
   }
   .lab-heading-badge {
     display: none;
@@ -2669,7 +2737,7 @@ dialog .tool-panel {
   .tool-nav {
     flex-direction: row;
     border-right: 0;
-    border-bottom: 1px solid #eae3f1;
+    border-bottom: 1px solid var(--border);
     padding: 10px;
     overflow: auto;
     gap: 5px;
@@ -2678,7 +2746,7 @@ dialog .tool-panel {
     width: auto;
     white-space: nowrap;
     padding: 10px;
-    font-size: 10px;
+    font-size: 0.75rem;
     flex-shrink: 0;
   }
   .tool-tab > .icon {
@@ -2702,7 +2770,7 @@ dialog .tool-panel {
   }
   .lab-bottom > span {
     max-width: 240px;
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .counter-tray {
     min-height: 150px;
@@ -2717,7 +2785,7 @@ dialog .tool-panel {
     padding: 20px;
   }
   .stats-grid b {
-    font-size: 30px;
+    font-size: 1.875rem;
   }
   .stats-grid .stat-icon {
     width: 27px;
@@ -2751,12 +2819,12 @@ dialog .tool-panel {
     gap: 10px;
   }
   .brand {
-    font-size: 25px;
+    font-size: 1.5625rem;
   }
   .brand-mark {
     width: 30px;
     height: 30px;
-    font-size: 25px;
+    font-size: 1.5625rem;
     border-radius: 9px;
   }
   .header-right {
@@ -2768,20 +2836,20 @@ dialog .tool-panel {
   }
   .header-right .btn {
     padding: 7px 10px;
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   .main-nav {
     order: 2;
     width: 100%;
     justify-content: center;
-    border-top: 1px solid #f0ecf4;
+    border-top: 1px solid var(--border);
     padding-top: 6px;
     gap: 12px;
   }
   .nav-item {
     padding: 9px 13px;
     border-radius: 7px 7px 0 0;
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   .nav-item .icon {
     width: 15px;
@@ -2797,27 +2865,27 @@ dialog .tool-panel {
     border-radius: 12px;
   }
   .hero h1 {
-    font-size: 32px;
+    font-size: 2rem;
     line-height: 1.3;
     letter-spacing: -1.2px;
   }
   .hero p {
-    font-size: 11px;
+    font-size: 0.75rem;
     margin-top: 12px;
     margin-bottom: 18px;
   }
   .hero .eyebrow {
-    font-size: 7px;
+    font-size: 0.75rem;
     letter-spacing: 1.1px;
     margin-bottom: 12px;
   }
   .hero-note {
     display: inline;
     margin-left: 10px;
-    font-size: 7px;
+    font-size: 0.75rem;
   }
   .hero .btn {
-    font-size: 10px;
+    font-size: 0.75rem;
     padding: 10px 12px;
     gap: 7px;
   }
@@ -2831,7 +2899,7 @@ dialog .tool-panel {
     margin-top: 5px;
   }
   .floating-equation {
-    font-size: 22px;
+    font-size: 1.375rem;
     position: absolute;
     top: 27px;
     left: 38%;
@@ -2841,29 +2909,29 @@ dialog .tool-panel {
     margin-top: 10px;
   }
   .art-caption {
-    font-size: 7px;
+    font-size: 0.75rem;
     margin-top: -8px;
     margin-bottom: 3px;
   }
   .spark-one {
     top: 18px;
     left: 30px;
-    font-size: 27px;
+    font-size: 1.6875rem;
   }
   .spark-two {
     right: 5px;
     bottom: 30px;
-    font-size: 22px;
+    font-size: 1.375rem;
   }
   .section-heading h2 {
-    font-size: 17px;
+    font-size: 1.0625rem;
     letter-spacing: -0.6px;
   }
   .section-heading .eyebrow {
-    font-size: 7px;
+    font-size: 0.75rem;
   }
   .section-heading .count-badge {
-    font-size: 8px;
+    font-size: 0.75rem;
     flex-shrink: 0;
   }
   .filter-row {
@@ -2873,7 +2941,7 @@ dialog .tool-panel {
   }
   .filter {
     padding: 6px 8px;
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   .topic-grid {
     grid-template-columns: 1fr;
@@ -2883,10 +2951,10 @@ dialog .tool-panel {
     padding: 19px 21px 0;
   }
   .topic-card h3 {
-    font-size: 17px;
+    font-size: 1.0625rem;
   }
   .topic-card > p {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
   .topic-top {
     margin-bottom: 13px;
@@ -2896,7 +2964,7 @@ dialog .tool-panel {
     width: 39px;
   }
   .topic-tag {
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   .lesson-links {
     margin-top: 16px;
@@ -2905,15 +2973,15 @@ dialog .tool-panel {
     padding: 12px 0;
   }
   .lesson-link strong {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
   .lesson-link small {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .lesson-number {
     width: 27px;
     height: 29px;
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   .lesson-link > .icon {
     width: 13px;
@@ -2921,7 +2989,7 @@ dialog .tool-panel {
   }
   .card-bottom {
     padding: 13px 0;
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .dashboard-aside {
     grid-template-columns: 1fr;
@@ -2930,48 +2998,48 @@ dialog .tool-panel {
     padding: 22px 20px 0;
   }
   .aside-title h3 {
-    font-size: 14px;
+    font-size: 0.875rem;
   }
   .journey-card > p {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
   .progress-stat > span {
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   .path-item {
     min-height: 54px;
   }
   .path-item strong {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
   .path-item small {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .gentle-note {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .lab-teaser {
     padding: 22px;
     display: block;
   }
   .lab-teaser h3 {
-    font-size: 15px;
+    font-size: 0.9375rem;
     max-width: unset;
   }
   .lab-teaser p {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
   .lab-teaser .text-button {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
   .coming-soon .section-heading h2 {
-    font-size: 17px;
+    font-size: 1.0625rem;
   }
   .coming-soon .section-heading p {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .coming-soon .badge {
-    font-size: 8px;
+    font-size: 0.75rem;
     padding: 5px 6px;
   }
   .future-grid {
@@ -2979,20 +3047,20 @@ dialog .tool-panel {
     gap: 12px;
   }
   .future-card h3 {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .future-card p {
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   .future-card summary {
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   footer {
     flex-wrap: wrap;
     justify-content: center;
     gap: 12px;
     padding: 25px 0;
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   footer .footer-brand {
     display: none;
@@ -3002,7 +3070,7 @@ dialog .tool-panel {
     justify-content: center;
   }
   .lesson-breadcrumb > span:last-child {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .lesson-breadcrumb {
     gap: 10px;
@@ -3012,31 +3080,31 @@ dialog .tool-panel {
     gap: 5px 12px;
   }
   .lesson-sidebar > h2 {
-    font-size: 15px;
+    font-size: 0.9375rem;
   }
   .lesson-sidebar > p {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .lesson-sidebar > .eyebrow {
-    font-size: 7px;
+    font-size: 0.75rem;
   }
   .question-dots {
     gap: 6px;
   }
   .question-dot {
     height: 32px;
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   .lesson-workspace {
     padding: 21px 18px;
     min-height: 520px;
   }
   .workspace-top .eyebrow {
-    font-size: 7px;
+    font-size: 0.75rem;
     letter-spacing: 0.8px;
   }
   .workspace-top .badge {
-    font-size: 7px;
+    font-size: 0.75rem;
     padding: 5px;
     gap: 3px;
   }
@@ -3045,13 +3113,13 @@ dialog .tool-panel {
     height: 10px;
   }
   .lesson-workspace h1 {
-    font-size: 23px;
+    font-size: 1.4375rem;
     margin-top: 21px;
     line-height: 1.5;
     letter-spacing: -0.7px;
   }
   .workspace-intro {
-    font-size: 11px;
+    font-size: 0.75rem;
     line-height: 1.9;
   }
   .rule-callout {
@@ -3060,18 +3128,18 @@ dialog .tool-panel {
     gap: 8px;
   }
   .rule-callout p {
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   .example-equation {
     gap: 15px;
     padding: 25px 0;
-    font-size: 24px;
+    font-size: 1.5rem;
   }
   .example-equation math {
-    font-size: 27px;
+    font-size: 1.6875rem;
   }
   .example-steps p {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
   .example-steps {
     gap: 13px;
@@ -3081,7 +3149,7 @@ dialog .tool-panel {
     padding-top: 18px;
   }
   .workspace-bottom .btn {
-    font-size: 10px;
+    font-size: 0.75rem;
     padding: 10px 12px;
   }
   .workspace-bottom .btn .icon {
@@ -3089,14 +3157,14 @@ dialog .tool-panel {
     height: 14px;
   }
   .workspace-bottom > span {
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   .practice-equation {
     min-height: 120px;
     margin: 21px 0;
   }
   .practice-equation math {
-    font-size: 32px;
+    font-size: 2rem;
   }
   .answer-row {
     flex-direction: column;
@@ -3106,52 +3174,52 @@ dialog .tool-panel {
   }
   .answer-row .btn {
     align-self: flex-end;
-    font-size: 10px;
+    font-size: 0.75rem;
     padding: 10px 14px;
   }
   #answer-format {
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   .help-row {
     gap: 16px;
     margin-top: 18px;
   }
   .help-row .text-button {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .feedback {
-    font-size: 11px;
+    font-size: 0.75rem;
     padding: 11px;
   }
   .page-heading {
     margin: 10px 0 24px;
   }
   .page-heading h1 {
-    font-size: 28px;
+    font-size: 1.75rem;
     letter-spacing: -1px;
   }
   .page-heading p {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
   .page-heading .eyebrow {
-    font-size: 7px;
+    font-size: 0.75rem;
     letter-spacing: 1.2px;
   }
   .return-banner {
     padding: 11px;
-    font-size: 9px;
+    font-size: 0.75rem;
     gap: 7px;
     flex-wrap: wrap;
   }
   .return-banner .text-button {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .tool-nav {
     padding: 8px;
     gap: 4px;
   }
   .tool-tab {
-    font-size: 9px;
+    font-size: 0.75rem;
     padding: 9px 8px;
     gap: 6px;
   }
@@ -3163,11 +3231,11 @@ dialog .tool-panel {
     padding: 22px 16px;
   }
   .tool-heading h2 {
-    font-size: 21px;
+    font-size: 1.3125rem;
     line-height: 1.5;
   }
   .tool-heading p {
-    font-size: 10px;
+    font-size: 0.75rem;
     margin-top: 5px;
   }
   .tool-inputs {
@@ -3179,26 +3247,26 @@ dialog .tool-panel {
     gap: 6px;
   }
   .number-field > span {
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   .number-field input {
     width: 65px;
-    font-size: 15px;
+    font-size: 0.9375rem;
     padding: 8px;
     height: 39px;
   }
   .number-field select {
     width: 98px;
-    font-size: 10px;
+    font-size: 0.75rem;
     padding: 8px;
     height: 39px;
   }
   .operation-equals {
-    font-size: 17px;
+    font-size: 1.0625rem;
     padding: 9px 0;
   }
   .result-pill {
-    font-size: 17px;
+    font-size: 1.0625rem;
     height: 39px;
     padding: 9px;
     min-width: 42px;
@@ -3212,7 +3280,7 @@ dialog .tool-panel {
     min-height: 100px;
   }
   .line-legend {
-    font-size: 8px;
+    font-size: 0.75rem;
     margin-right: 5px;
   }
   .line-step-controls {
@@ -3221,11 +3289,11 @@ dialog .tool-panel {
     margin-top: 15px;
   }
   .line-step-controls .btn {
-    font-size: 9px;
+    font-size: 0.75rem;
     padding: 7px 8px;
   }
   .line-step-controls > span {
-    font-size: 8px;
+    font-size: 0.75rem;
     margin-left: 0;
   }
   .visual-explanation {
@@ -3234,10 +3302,10 @@ dialog .tool-panel {
     margin-top: 18px;
   }
   .visual-explanation strong {
-    font-size: 10px;
+    font-size: 0.75rem;
   }
   .visual-explanation p {
-    font-size: 9px;
+    font-size: 0.75rem;
     line-height: 1.9;
   }
   .visual-explanation > .icon {
@@ -3250,11 +3318,11 @@ dialog .tool-panel {
   }
   .try-presets > span {
     width: 100%;
-    font-size: 8px;
+    font-size: 0.75rem;
     margin-bottom: 3px;
   }
   .preset {
-    font-size: 9px;
+    font-size: 0.75rem;
     padding: 5px 8px;
   }
   .lab-bottom {
@@ -3265,21 +3333,21 @@ dialog .tool-panel {
   }
   .lab-bottom > span {
     text-align: left;
-    font-size: 9px;
+    font-size: 0.75rem;
     max-width: none;
   }
   .lab-bottom p {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .counter-columns {
     gap: 13px;
     margin-top: 22px;
   }
   .counter-heading {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .counter-heading b {
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
   .counter-tray {
     gap: 6px;
@@ -3289,10 +3357,10 @@ dialog .tool-panel {
   .counter {
     width: 28px;
     height: 28px;
-    font-size: 18px;
+    font-size: 1.125rem;
   }
   .counter-buttons .btn {
-    font-size: 8px;
+    font-size: 0.75rem;
     padding: 7px 5px;
     width: 100%;
     flex-basis: 100%;
@@ -3303,20 +3371,20 @@ dialog .tool-panel {
     gap: 11px;
   }
   .counter-summary math {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
   .counter-summary > span {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .counter-actions {
     flex-wrap: wrap;
   }
   .counter-actions .btn {
-    font-size: 9px;
+    font-size: 0.75rem;
     padding: 9px;
   }
   .counter-actions .text-button {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .fraction-values {
     flex-direction: column;
@@ -3326,13 +3394,13 @@ dialog .tool-panel {
     padding: 0;
   }
   .fraction-values math {
-    font-size: 21px;
+    font-size: 1.3125rem;
   }
   .fraction-values > span {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
   .fraction-slash {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
   .fraction-stage {
     margin-top: 24px;
@@ -3343,7 +3411,7 @@ dialog .tool-panel {
     padding: 3px;
   }
   .fraction-row > span {
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   .percent-layout {
     gap: 20px;
@@ -3361,16 +3429,16 @@ dialog .tool-panel {
     margin-top: 10px;
   }
   .percent-equivalent > strong {
-    font-size: 28px;
+    font-size: 1.75rem;
   }
   .percent-equivalent > span {
-    font-size: 15px;
+    font-size: 0.9375rem;
   }
   .percent-equivalent math {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
   .percent-values > p {
-    font-size: 8px;
+    font-size: 0.75rem;
     margin-top: 10px;
   }
   .factor-columns {
@@ -3381,29 +3449,29 @@ dialog .tool-panel {
     padding: 13px;
   }
   .factor-card .eyebrow {
-    font-size: 6px;
+    font-size: 0.75rem;
     letter-spacing: 0.5px;
   }
   .factor-card h3 {
-    font-size: 27px;
+    font-size: 1.6875rem;
   }
   .prime-chips {
     gap: 5px;
     margin-top: 10px;
   }
   .prime-chips b {
-    font-size: 11px;
+    font-size: 0.75rem;
     padding: 4px 6px;
   }
   .factor-card > small {
-    font-size: 8px;
+    font-size: 0.75rem;
     margin-top: 15px;
   }
   .factor-list {
     gap: 5px;
   }
   .factor-list > span {
-    font-size: 9px;
+    font-size: 0.75rem;
     padding: 3px 5px;
   }
   .factor-results {
@@ -3414,13 +3482,13 @@ dialog .tool-panel {
     padding: 12px;
   }
   .factor-results span {
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   .factor-results strong {
-    font-size: 25px;
+    font-size: 1.5625rem;
   }
   .factor-results small {
-    font-size: 8px;
+    font-size: 0.75rem;
     line-height: 1.8;
   }
   .calculator-layout {
@@ -3440,7 +3508,7 @@ dialog .tool-panel {
     padding: 12px 5px;
   }
   .calculator-result {
-    font-size: 29px;
+    font-size: 1.8125rem;
     min-height: 55px;
   }
   .stats-grid {
@@ -3458,13 +3526,13 @@ dialog .tool-panel {
     width: 26px;
   }
   .stats-grid b {
-    font-size: 27px;
+    font-size: 1.6875rem;
   }
   .stats-grid b small {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .stats-grid > div > span:last-child {
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   .progress-lessons {
     gap: 9px;
@@ -3485,23 +3553,23 @@ dialog .tool-panel {
     height: 19px;
   }
   .progress-lessons h3 {
-    font-size: 11px;
+    font-size: 0.75rem;
     line-height: 1.7;
   }
   .progress-lessons article small {
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   .progress-lessons article > div {
     flex-basis: calc(100% - 42px);
   }
   .progress-lessons article > span:not(.topic-icon) {
-    font-size: 9px;
+    font-size: 0.75rem;
     margin-left: 41px;
   }
   .progress-lessons .btn {
     margin-left: auto;
     min-width: 80px;
-    font-size: 9px;
+    font-size: 0.75rem;
     padding: 7px 9px;
   }
   .progress-lessons .btn .icon {
@@ -3509,7 +3577,7 @@ dialog .tool-panel {
     height: 13px;
   }
   .save-note {
-    font-size: 9px;
+    font-size: 0.75rem;
     align-items: flex-start;
   }
   .save-note .icon {
@@ -3517,7 +3585,7 @@ dialog .tool-panel {
   }
   .export-btn,
   .import-btn {
-    font-size: 9px;
+    font-size: 0.75rem;
     padding: 8px 11px;
     margin-bottom: 30px;
   }
@@ -3530,20 +3598,20 @@ dialog .tool-panel {
     padding: 18px 17px 16px;
   }
   .dialog-header h2 {
-    font-size: 21px;
+    font-size: 1.3125rem;
   }
   .dialog-header .eyebrow {
-    font-size: 7px;
+    font-size: 0.75rem;
   }
   dialog .tool-panel {
     padding: 20px 14px;
   }
   dialog .tool-heading h2 {
-    font-size: 19px;
+    font-size: 1.1875rem;
   }
   .dialog-footer {
     padding: 13px 10px;
-    font-size: 8px;
+    font-size: 0.75rem;
   }
   .dialog-header .icon-button {
     padding: 6px;
@@ -3554,7 +3622,7 @@ dialog .tool-panel {
   }
   #toast {
     bottom: 20px;
-    font-size: 11px;
+    font-size: 0.75rem;
     width: max-content;
     max-width: calc(100% - 30px);
     text-align: center;

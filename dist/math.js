@@ -86,7 +86,10 @@ export function calculate(input) {
 export const pretty = (n) =>
   Object.is(n, -0)
     ? "0"
-    : Number(n.toPrecision(10)).toString().replace("-", "−");
+    : (Number.isInteger(n)
+        ? n.toString()
+        : Number(n.toPrecision(15)).toString()
+      ).replace("-", "−");
 export function escapeHTML(s) {
   return String(s).replace(
     /[&<>"']/g,

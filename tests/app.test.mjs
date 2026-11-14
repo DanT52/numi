@@ -87,11 +87,24 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       assert.equal(document.querySelector("#answer").value, "2");
       submit("#answer-form");
       assert.ok(document.querySelector(".feedback.success"));
+      assert.ok(
+        document.querySelector('.lesson-companion img[src="assets/happy.svg"]'),
+      );
       assert.deepEqual(persisted().progress["integers-1"].solved, [0]);
+      const earned = persisted().game.streak;
+      submit("#answer-form");
+      assert.equal(
+        persisted().game.streak,
+        earned,
+        "Rechecking a solved answer does not award another streak point",
+      );
       click("next-question");
       type("#answer", "4");
       submit("#answer-form");
       assert.ok(document.querySelector(".feedback.retry"));
+      assert.ok(
+        document.querySelector('.lesson-companion img[src="assets/sad.svg"]'),
+      );
       click("hint");
       assert.match(document.querySelector(".hint-box").textContent, /negative/);
       type("#answer", "-3");
@@ -103,7 +116,22 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
     "tools overlay preserves lesson answers and supports zero pairs",
     () => {
       click("open-tools");
-      assert.ok(document.querySelector("dialog[open]"));
+      assert.ok(document.querySelector('#tools-dialog[role="region"]'));
+      assert.ok(document.body.classList.contains("tools-open"));
+      assert.ok(
+        document.querySelector("#answer"),
+        "Lesson remains interactive beside the panel",
+      );
+      assert.match(
+        document.querySelector("#tools-context").textContent,
+        /PROBLEM 2/,
+      );
+      type("#answer", "-3");
+      submit("#answer-form");
+      assert.ok(
+        document.querySelector("#tools-dialog"),
+        "Checking a lesson answer keeps tools open",
+      );
       click("tool:counters");
       click("cancel-pairs");
       assert.equal(document.querySelectorAll(".counter.positive").length, 2);
@@ -112,7 +140,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       assert.equal(document.querySelectorAll(".counter.positive").length, 3);
       assert.equal(document.querySelectorAll(".counter.negative").length, 1);
       click("close-tools");
-      assert.equal(document.querySelector("dialog"), null);
+      assert.equal(document.querySelector("#tools-dialog"), null);
       assert.equal(document.querySelector("#answer").value, "-3");
     },
   );
@@ -131,7 +159,9 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       document.querySelector(".line-step-controls").textContent,
       /1 \/ 3/,
     );
-    click("preset:-2,-3,*");
+    change("a", -2);
+    change("b", -3);
+    change("op", "*");
     assert.equal(document.querySelector(".result-pill").textContent, "6");
     change("op", "/");
     change("b", 0);
@@ -195,7 +225,8 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       click("home");
       for (const lesson of lessons) {
         click("lesson:" + lesson.id);
-        if (document.querySelector('[data-action="begin-practice"]')) click("begin-practice");
+        if (document.querySelector('[data-action="begin-practice"]'))
+          click("begin-practice");
         for (let i = 0; i < 8; i++) {
           click("question:" + i);
           type("#answer", lesson.problems[i].answer);
@@ -218,11 +249,86 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
     },
   );
   await t.test(
+    "large fractions and number-line inputs stay exact without creating huge diagrams",
+    () => {
+      click("view:lab");
+      click("tool:fractions");
+      click("fraction:33,75");
+      assert.equal(document.querySelectorAll(".fraction-piece").length, 75);
+      assert.equal(
+        document.querySelectorAll(".fraction-piece.filled").length,
+        33,
+      );
+      change("num", 12345);
+      change("den", 75000);
+      assert.match(
+        document.querySelector(".grouped-fraction").textContent,
+        /12,345 \/ 75,000/,
+      );
+      change("num", 1000000);
+      change("den", 1);
+      assert.ok(document.querySelectorAll(".fraction-row").length <= 2);
+      assert.match(
+        document.querySelector(".fraction-row").textContent,
+        /1,000,000/,
+      );
+      click("tool:line");
+      change("a", -1000000000);
+      change("b", 2500000000);
+      change("op", "+");
+      assert.equal(
+        document.querySelector(".result-pill").textContent,
+        "1500000000",
+      );
+      assert.ok(
+        document.querySelectorAll(".interactive-line text").length < 30,
+      );
+      assert.ok(
+        !/NaN|Infinity/.test(
+          document.querySelector(".interactive-line").outerHTML,
+        ),
+      );
+    },
+  );
+  await t.test(
+    "appearance preferences apply and persist without changing lesson progress",
+    () => {
+      const solved = JSON.stringify(persisted().progress);
+      click("view:settings");
+      assert.equal(document.documentElement.dataset.theme, "matcha");
+      const radio = document.querySelector(
+        'input[data-setting="theme"][value="ocean"]',
+      );
+      radio.checked = true;
+      radio.dispatchEvent(new window.Event("change", { bubbles: true }));
+      assert.equal(document.documentElement.dataset.theme, "ocean");
+      for (const [setting, value] of [
+        ["size", "large"],
+        ["weight", "bold"],
+      ]) {
+        const select = document.querySelector(`[data-setting="${setting}"]`);
+        for (const option of select.options)
+          option.value === value
+            ? option.setAttribute("selected", "")
+            : option.removeAttribute("selected");
+        select.dispatchEvent(new window.Event("change", { bubbles: true }));
+      }
+      assert.equal(document.documentElement.style.fontSize, "20px");
+      assert.equal(document.documentElement.dataset.textWeight, "bold");
+      assert.equal(JSON.parse(stored.get("numi.appearance.v1")).theme, "ocean");
+      assert.equal(JSON.stringify(persisted().progress), solved);
+      click("reset-appearance");
+      assert.equal(document.documentElement.dataset.theme, "matcha");
+      assert.equal(document.documentElement.style.fontSize, "18px");
+    },
+  );
+  await t.test(
     "reload restores unfinished answer and question position",
     async () => {
       click("home");
       click("lesson:fractions-1");
-      if (document.querySelector('[data-action="begin-practice"]')) click("begin-practice");
+      if (document.querySelector('[data-action="begin-practice"]'))
+        click("begin-practice");
       click("question:4");
       type("#answer", "3 3/4");
       mount();
@@ -232,6 +338,12 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
         document.querySelector(".workspace-top").textContent,
         /PROBLEM 5 OF 8/,
       );
+      assert.equal(
+        persisted().progress["integers-1"].solved.length,
+        8,
+        "Existing locally saved lessons survive the upgrade and reload",
+      );
+      assert.equal(document.documentElement.dataset.theme, "matcha");
     },
   );
 });

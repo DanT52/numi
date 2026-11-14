@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- Transparent background; simple kawaii portrait -->
+<!-- Hair behind face -->
+<path d="M39 77C33 38 50 17 80 17s47 21 41 60l5 56H34l5-56Z" fill="#292329" stroke="#292329" stroke-width="4" stroke-linejoin="round"/>
+<!-- Jacket and shirt -->
+<path d="M30 149v-17c0-18 12-27 30-27h40c18 0 30 9 30 27v17H30Z" fill="#C6AC8D" stroke="#594842" stroke-width="3" stroke-linejoin="round"/>
+<path d="m67 106 13 19 13-19" fill="#F0F3ED" stroke="#594842" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="m111 112-35 37" stroke="#A43C50" stroke-width="7" stroke-linecap="round"/>
+<!-- Neck and face -->
+<path d="M69 100v12q11 11 22 0v-12" fill="#E6A985"/>
+<ellipse cx="80" cy="69" rx="37" ry="42" fill="#F5BD99" stroke="#594842" stroke-width="3"/>
+<!-- Simple front bangs and long side locks -->
+<path d="M43 63C41 39 56 22 80 22c26 0 39 17 37 41-8-15-18-23-29-27-14 15-28 12-45 27Z" fill="#292329"/>
+<path d="M44 56c-7 14-7 40-9 69 13-9 20-23 18-47l-2-26Z" fill="#292329"/>
+<path d="M116 56c7 14 7 40 9 69-13-9-20-23-18-47l2-26Z" fill="#292329"/>
+<!-- Cheeks -->
+<ellipse cx="51" cy="89" rx="9" ry="5" fill="#F48F9D" opacity=".65"/>
+<ellipse cx="109" cy="89" rx="9" ry="5" fill="#F48F9D" opacity=".65"/>
+<path d="M55 74q8 10 16 0m18 0q8 10 16 0" stroke="#382B2B" stroke-width="3.5" stroke-linecap="round"/>
+<path d="M67 93q13 22 26 0Z" fill="#C86172" stroke="#8E5055" stroke-width="2" stroke-linejoin="round"/>
+<path d="m34 46 2-6 2 6 6 2-6 2-2 6-2-6-6-2Z" fill="#FFD476"/>
+<!-- Transparent eyeglasses -->
+<g stroke="#FFF7EE" stroke-width="3.5" stroke-linejoin="round">
+<rect x="49" y="63" width="27" height="22" rx="9"/>
+<rect x="84" y="63" width="27" height="22" rx="9"/>
+<path d="M76 70q4-4 8 0M49 69l-5-2m67 2 5-2" stroke-linecap="round"/>
+</g>
+<!-- Tiny mitten hand and matcha cup: no detailed fingers -->
+<path d="M113 132q5-5 12-2" stroke="#C6AC8D" stroke-width="16" stroke-linecap="round"/>
+<circle cx="126" cy="134" r="7" fill="#F5BD99" stroke="#594842" stroke-width="2"/>
+<path d="m132 114 4-18" stroke="#54866A" stroke-width="3" stroke-linecap="round"/>
+<path d="M118 114h28l-3 31h-22l-3-31Z" fill="#B8D9A3" stroke="#594842" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M117 114h30" stroke="#EDF3E6" stroke-width="5" stroke-linecap="round"/>
+<path d="M124 127q5-5 10 0" stroke="#6A9A67" stroke-width="2.5" stroke-linecap="round"/>
+<!-- One rounded mitten grip -->
+<ellipse cx="119" cy="133" rx="7" ry="8" fill="#F5BD99" stroke="#594842" stroke-width="2"/>
+</svg>
