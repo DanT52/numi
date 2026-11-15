@@ -5,6 +5,7 @@ import {
   fractionModel,
   lineModel,
   tickLabel,
+  advanceLine,
 } from "../dist/visual-models.js";
 import { normalizeAppearance } from "../dist/appearance.js";
 import { pretty } from "../dist/math.js";
@@ -83,6 +84,36 @@ test("short final moves and no-op operations still require a step", () => {
   assert.equal(final.complete, true);
   assert.equal(lineModel({ a: 5, op: "+", b: 0, step: 0 }).complete, false);
   assert.equal(lineModel({ a: 5, op: "+", b: 0, step: 1 }).complete, true);
+});
+test("default moves use one unit independently of tick spacing and alternate with larger jumps", () => {
+  const lab = { a: -12500, op: "+", b: 30000, step: 0 };
+  assert.equal(lineModel(lab).axis.tick, 5000);
+  lab.step = advanceLine(lab);
+  assert.equal(lineModel(lab).end, -12499);
+  lab.step = advanceLine(lab, 5000);
+  assert.equal(lineModel(lab).end, -7499);
+  lab.step = advanceLine(lab);
+  assert.equal(lineModel(lab).end, -7498);
+  assert.equal(lineModel(lab).complete, false);
+  const left = { a: 200, op: "-", b: 350, step: 0 };
+  left.step = advanceLine(left);
+  assert.equal(lineModel(left).end, 199);
+  const boundary = {
+    a: 40,
+    op: "+",
+    b: 3,
+    operations: [{ op: "-", value: 100 }],
+    step: 0,
+  };
+  boundary.step = advanceLine(boundary, 50);
+  assert.equal(lineModel(boundary).end, 43);
+  assert.equal(lineModel(boundary).complete, false);
+  boundary.step = advanceLine(boundary);
+  assert.equal(lineModel(boundary).end, 42);
+  const small = { a: 0, op: "+", b: 2.5, step: 0 };
+  for (let i = 0; i < 3; i++) small.step = advanceLine(small);
+  assert.equal(lineModel(small).end, 2.5);
+  assert.equal(lineModel(small).complete, true);
 });
 test("fraction models retain all pieces and compact very large wholes", () => {
   const small = fractionModel(33, 75);

@@ -18,6 +18,7 @@ import {
   lineOperations,
   lineModel,
   expressionToLine,
+  advanceLine,
 } from "./visual-models.js";
 import { numberLineView, fractionView } from "./tool-views.js";
 import {
@@ -709,8 +710,11 @@ document.addEventListener("click", (e) => {
   } else if (action === "line-finish") {
     lab.step = null;
     rerenderTools();
-  } else if (action === "line-step") {
-    lab.step = Math.min(lineData().total, (lab.step ?? 0) + 1);
+  } else if (action === "line-step" || action === "line-jump") {
+    lab.step = advanceLine(
+      lab,
+      action === "line-step" ? 1 : Math.max(10, lineData().axis.tick),
+    );
     rerenderTools();
   } else if (action === "preset") {
     const [a, b, op] = value.split(",");
@@ -819,7 +823,7 @@ document.addEventListener("input", (e) => {
       panel.querySelectorAll(".operation-answer").forEach((e) => e.remove());
       panel
         .querySelectorAll(
-          '[data-action="line-step"],[data-action="line-finish"]',
+          '[data-action="line-step"],[data-action="line-jump"],[data-action="line-finish"]',
         )
         .forEach((button) => button.removeAttribute("disabled"));
       panel

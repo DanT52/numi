@@ -8,17 +8,7 @@ import {
 
 export function numberLineView(lab, { field, button, icon, toolTitle }) {
   const model = lineModel(lab),
-    {
-      result,
-      start,
-      end,
-      step,
-      total,
-      complete,
-      segments,
-      error,
-      activeIndex,
-    } = model;
+    { result, start, end, complete, segments, error, activeIndex } = model;
   const { x, ticks, tick } = model.axis;
   const operations = [{ op: lab.op, value: lab.b }, ...(lab.operations || [])];
   const operators = [
@@ -139,10 +129,10 @@ export function numberLineView(lab, { field, button, icon, toolTitle }) {
       "Current position " +
         pretty(end) +
         ". " +
-        step +
+        (activeIndex + 1) +
         " of " +
-        total +
-        " steps. " +
+        operations.length +
+        " operations. " +
         (complete
           ? "Final result " + pretty(result) + "."
           : "Final result hidden."),
@@ -182,9 +172,15 @@ export function numberLineView(lab, { field, button, icon, toolTitle }) {
       "btn btn-small btn-outline",
     ) +
     button(
-      "Take a step " + icon("arrow"),
+      "Take a step (1) " + icon("arrow"),
       "line-step",
       "btn btn-small btn-primary",
+      complete || error ? "disabled" : "",
+    ) +
+    button(
+      "Jump by " + pretty(Math.max(10, tick)),
+      "line-jump",
+      "btn btn-small btn-outline",
       complete || error ? "disabled" : "",
     ) +
     button(
@@ -193,14 +189,14 @@ export function numberLineView(lab, { field, button, icon, toolTitle }) {
       "btn btn-small btn-outline",
       complete || error ? "disabled" : "",
     ) +
-    "<span>" +
-    step +
+    "<span>Operation " +
+    (activeIndex + 1) +
     " / " +
-    total +
-    " steps</span></div>" +
-    '<p class="scale-note">One step = one tick (' +
+    operations.length +
+    "</span></div>" +
+    '<p class="scale-note">Tick spacing: ' +
     pretty(tick) +
-    "). A final shorter step lands exactly on the next value.</p></div>" +
+    ". Both buttons stop at the end of the current operation.</p></div>" +
     '<div class="try-presets"><span>Examples</span>' +
     button("−3 + 5", "preset:-3,5,+", "preset") +
     button("4 − (−3)", "preset:4,-3,-", "preset") +

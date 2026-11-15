@@ -109,15 +109,13 @@ export function lineModel(lab) {
     const distanceInTicks = Math.abs(
       segment.to / axis.tick - segment.from / axis.tick,
     );
-    segment.steps = Math.max(1, Math.ceil(distanceInTicks - 1e-12));
+    segment.steps = distanceInTicks || 1 / axis.tick;
     segment.startStep = total;
     total += segment.steps;
     segment.endStep = total;
   }
   const step =
-    lab.step === null
-      ? total
-      : Math.min(total, Math.max(0, Math.floor(lab.step || 0)));
+    lab.step === null ? total : Math.min(total, Math.max(0, lab.step || 0));
   const complete = !error && step === total && total > 0;
   let end = lab.a;
   for (const segment of segments) {
@@ -128,11 +126,13 @@ export function lineModel(lab) {
     segment.complete = segment.walked === segment.steps;
     if (segment.walked === 0) segment.current = segment.from;
     else if (segment.complete) segment.current = segment.to;
-    else
-      segment.current =
-        (segment.from / axis.tick +
-          Math.sign(segment.to - segment.from) * segment.walked) *
-        axis.tick;
+    else {
+      const distance = segment.walked * axis.tick,
+        direction = Math.sign(segment.to - segment.from);
+      segment.current = Number.isFinite(distance)
+        ? segment.from + direction * distance
+        : (segment.from / axis.tick + direction * segment.walked) * axis.tick;
+    }
     if (segment.walked > 0) end = segment.current;
   }
   const activeIndex = segments.findIndex((s) => step < s.endStep);
@@ -149,6 +149,18 @@ export function lineModel(lab) {
     activeIndex:
       activeIndex === -1 ? Math.max(0, segments.length - 1) : activeIndex,
   };
+}
+
+// Progress uses axis-tick units internally; controls choose a distance in number units.
+export function advanceLine(lab, distance = 1) {
+  const model = lineModel(lab);
+  if (model.complete || model.error) return lab.step;
+  const segment = model.segments[model.activeIndex];
+  if (!segment) return lab.step;
+  const remaining = (segment.endStep - model.step) * model.axis.tick;
+  return distance >= remaining - 1e-9
+    ? segment.endStep
+    : model.step + distance / model.axis.tick;
 }
 
 export function fractionModel(numerator, denominator) {

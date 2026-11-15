@@ -202,14 +202,14 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
     );
     assert.equal(document.querySelectorAll(".operation-answer").length, 0);
     click("line-reset");
-    assert.match(
-      document.querySelector(".line-step-controls").textContent,
-      /0 \/ 3/,
+    assert.equal(
+      document.querySelector(".line-position strong").textContent,
+      "4",
     );
     click("line-step");
     assert.match(
-      document.querySelector(".line-step-controls").textContent,
-      /1 \/ 3/,
+      document.querySelector('[data-action="line-step"]').textContent,
+      /\(1\)/,
     );
     assert.equal(
       document.querySelector(".line-position strong").textContent,
@@ -277,8 +277,20 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       click("line-step");
       assert.equal(
         document.querySelector(".line-position strong").textContent,
-        "−7500",
-        "Large inputs move by the 5000-unit tick",
+        "−12499",
+        "The default step moves one unit even with a 5000-unit tick",
+      );
+      click("line-jump");
+      assert.equal(
+        document.querySelector(".line-position strong").textContent,
+        "−7499",
+        "Larger jumps can be combined with unit steps",
+      );
+      click("line-step");
+      assert.equal(
+        document.querySelector(".line-position strong").textContent,
+        "−7498",
+        "Default steps remain one after a larger jump",
       );
       assert.equal(document.querySelector(".result-pill").textContent, "?");
       click("line-finish");
