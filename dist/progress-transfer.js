@@ -1,5 +1,5 @@
 import { lessons } from "./lessons.js";
-import { migrateFractionProgress } from "./progress-migration.js";
+import { migrateLessonProgress } from "./progress-migration.js";
 
 const MAX_SIZE = 200000;
 export function normalizeProgress(value) {
@@ -11,7 +11,7 @@ export function normalizeProgress(value) {
     Array.isArray(value.progress)
   )
     throw Error("This is not a valid Numi progress export.");
-  value = migrateFractionProgress(value);
+  value = migrateLessonProgress(value);
   const progress = {};
   const indices = (list, size) => {
     if (!Array.isArray(list)) throw Error("The progress data is incomplete.");

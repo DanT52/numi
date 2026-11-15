@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parseHTML } from "linkedom";
 import { lessons } from "../dist/lessons.js";
+import { legacyThreeNumberExpressions } from "../dist/lessons/signed-numbers/legacy-three-number-questions.js";
+import { calculate } from "../dist/math.js";
 
 const stored = new Map();
 globalThis.localStorage = {
@@ -376,7 +378,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
         click("all-lessons");
       }
       click("view:progress");
-      assert.match(document.querySelector(".stats-grid").textContent, /169/);
+      assert.match(document.querySelector(".stats-grid").textContent, /239/);
       assert.match(document.querySelector(".stats-grid").textContent, /100/);
       assert.equal(
         lessons.filter(
@@ -480,7 +482,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       );
       assert.equal(
         persisted().progress["integers-1"].solved.length,
-        8,
+        16,
         "Existing locally saved lessons survive the upgrade and reload",
       );
       assert.equal(document.documentElement.dataset.theme, "matcha");
@@ -575,6 +577,58 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       assert.deepEqual(
         persisted().progress["fractions-add-subtract"].solved,
         [0, 8],
+      );
+    },
+  );
+  await t.test(
+    "old local signed progress migrates before rendering and survives another reload",
+    async () => {
+      stored.set(
+        "numi.progress.v1",
+        JSON.stringify({
+          version: 1,
+          view: "lessons",
+          topic: "all",
+          lesson: "integers-add-subtract-2",
+          progress: {
+            "integers-add-subtract-2": {
+              index: 19,
+              stage: "practice",
+              solved: Array.from({ length: 20 }, (_, i) => i),
+              answers: Object.fromEntries(
+                legacyThreeNumberExpressions
+                  .slice(0, 20)
+                  .map((expr, i) => [i, String(calculate(expr))]),
+              ),
+              hints: [],
+              reveals: [],
+            },
+          },
+        }),
+      );
+      mount();
+      await import("../dist/app.js?legacy-signed");
+      assert.equal(persisted().lesson, "integers-add-subtract-large-3");
+      assert.match(
+        document.querySelector(".workspace-top").textContent,
+        /PROBLEM 5 OF 25/,
+      );
+      assert.equal(document.querySelector("#answer").value, "-5");
+      assert.equal(
+        persisted().progress["integers-add-subtract-small-3"].solved.length,
+        15,
+      );
+      assert.equal(
+        persisted().progress["integers-add-subtract-large-3"].solved.length,
+        5,
+      );
+      const before = JSON.stringify(persisted().progress);
+      mount();
+      await import("../dist/app.js?signed-reload");
+      assert.equal(
+        JSON.stringify(persisted().progress),
+        before,
+        "A second load must not remap or duplicate completed questions",
       );
     },
   );

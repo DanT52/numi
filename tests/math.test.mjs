@@ -84,21 +84,25 @@ test("prime products only contain prime factors", () => {
   assert.equal(isPrimeProduct("2+3"), false);
 });
 test("expanded curriculum has complete lessons and valid problems", () => {
-  assert.equal(lessons.length, 15);
-  assert.equal(new Set(lessons.map((l) => l.id)).size, 15);
+  assert.equal(lessons.length, 17);
+  assert.equal(new Set(lessons.map((l) => l.id)).size, 17);
   for (const topic of topics)
     assert.equal(
       lessons.filter((l) => l.topic === topic.id).length,
-      topic.id === "fractions" ? 7 : topic.id === "integers" ? 4 : 2,
+      topic.id === "fractions" ? 7 : topic.id === "integers" ? 6 : 2,
     );
   for (const lesson of lessons) {
     assert.equal(
       lesson.problems.length,
-      lesson.id === "integers-add-subtract-2"
+      lesson.id.startsWith("integers-add-subtract-")
         ? 25
-        : lesson.topic === "fractions" || lesson.id === "integers-review"
-          ? 12
-          : 8,
+        : lesson.id === "integers-1"
+          ? 16
+          : lesson.id === "integers-review"
+            ? 24
+            : lesson.topic === "fractions"
+              ? 12
+              : 8,
     );
     assert.ok(lesson.example.steps.length >= 3);
     assert.ok(lesson.rule);

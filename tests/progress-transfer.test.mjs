@@ -6,7 +6,7 @@ import {
   normalizeProgress,
   mergeProgress,
 } from "../dist/progress-transfer.js";
-import { workedExamples, fractionExamples } from "../dist/worked-examples.js";
+import { lessons } from "../dist/lessons.js";
 import { calculate, math } from "../dist/math.js";
 const p = {
   index: 2,
@@ -45,7 +45,7 @@ test("corrupted, incomplete, and oversized codes are rejected", () => {
   assert.throws(() =>
     normalizeProgress({
       version: 1,
-      progress: { "integers-1": { ...p, solved: [10] } },
+      progress: { "integers-1": { ...p, solved: [99] } },
     }),
   );
 });
@@ -67,10 +67,10 @@ test("imports keep already solved problems and support previous JSON files", () 
   assert.deepEqual(state.progress["integers-1"].solved, [0, 1]);
 });
 test("every rendered worked-equation line is mathematically equivalent", () => {
-  for (const example of [
-    ...Object.values(workedExamples),
-    ...fractionExamples,
-  ]) {
+  for (const example of lessons.flatMap((l) => [
+    l.example,
+    ...(l.moreExamples || []),
+  ])) {
     assert.ok(
       Math.abs(calculate(example.expr) - calculate(example.answer)) < 1e-10,
       example.expr,

@@ -1,0 +1,98 @@
+export default {
+  id: "integers-2",
+  topic: "integers",
+  title: "Multiplying & dividing signed numbers",
+  subtitle: "Spot the pattern behind positive and negative results.",
+  minutes: 12,
+  tool: "line",
+  rule: "For multiplication and division, equal signs give a positive result; different signs give a negative result. Multiply or divide the magnitudes, then choose the sign. Division by zero is undefined.",
+  example: {
+    expr: "(-4)*(-3)",
+    answer: "12",
+    steps: [
+      {
+        text: "Multiply the magnitudes, ignoring their signs for this step.",
+        lines: [["4*3", "12"]],
+      },
+      {
+        text: "Both factors have the same sign, so their product is positive.",
+        lines: [["(-4)*(-3)", "12"]],
+      },
+      {
+        text: "Check the pattern: each time the second factor decreases by one, the result increases by four.",
+        lines: [
+          ["(-4)*1", "-4"],
+          ["(-4)*0", "0"],
+          ["(-4)*(-1)", "4"],
+        ],
+      },
+    ],
+  },
+  problems: [
+    {
+      expr: "(-3)*4",
+      answer: "-12",
+      hint: "Different signs give a negative result.",
+      solution: "3 × 4 = 12; different signs make −12.",
+      prompt: "Find the answer.",
+      type: "number",
+    },
+    {
+      expr: "(-5)*(-2)",
+      answer: "10",
+      hint: "Matching signs give a positive result.",
+      solution: "5 × 2 = 10; matching signs make +10.",
+      prompt: "Find the answer.",
+      type: "number",
+    },
+    {
+      expr: "18/(-3)",
+      answer: "-6",
+      hint: "Divide 18 by 3, then check the signs.",
+      solution: "18 ÷ 3 = 6; different signs make −6.",
+      prompt: "Find the answer.",
+      type: "number",
+    },
+    {
+      expr: "(-24)/(-6)",
+      answer: "4",
+      hint: "Two negative signs give a positive quotient.",
+      solution: "24 ÷ 6 = 4; the signs match, so the answer is 4.",
+      prompt: "Find the answer.",
+      type: "number",
+    },
+    {
+      expr: "(-7)*0",
+      answer: "0",
+      hint: "Any number multiplied by zero is zero.",
+      solution: "There are no groups, so the total is 0.",
+      prompt: "Find the answer.",
+      type: "number",
+    },
+    {
+      expr: "(-2)*(-3)*(-4)",
+      answer: "-24",
+      hint: "Multiply the first two numbers, then multiply by −4.",
+      solution: "(−2) × (−3) = 6, then 6 × (−4) = −24.",
+      prompt: "Find the answer.",
+      type: "number",
+    },
+    {
+      expr: "0/(-5)",
+      answer: "0",
+      hint: "Zero divided into any nonzero number of groups is zero.",
+      solution:
+        "0 ÷ (−5) = 0. The denominator is not zero, so division is defined.",
+      prompt: "Find the answer.",
+      type: "number",
+    },
+    {
+      expr: "(-36)/4*(-2)",
+      answer: "18",
+      hint: "Work from left to right for multiplication and division.",
+      solution: "−36 ÷ 4 = −9, then (−9) × (−2) = 18.",
+      prompt: "Find the answer.",
+      type: "number",
+    },
+  ],
+};
