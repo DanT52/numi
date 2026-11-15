@@ -126,6 +126,8 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
     assert.ok(document.querySelector(".step-equation math"));
     click("begin-practice");
     assert.ok(document.querySelector("#answer"));
+    assert.equal(document.querySelector('[data-action="hint"]'), null);
+    assert.equal(document.querySelector('[data-action="reveal"]'), null);
   });
   await t.test(
     "typed answers survive tab changes; checks support retries",
@@ -156,6 +158,12 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       );
       click("hint");
       assert.match(document.querySelector(".hint-box").textContent, /negative/);
+      assert.equal(document.querySelector('[data-action="reveal"]'), null);
+      submit("#answer-form");
+      assert.ok(document.querySelector('[data-action="reveal"]'));
+      click("reveal");
+      assert.ok(document.querySelector(".solution-answer"));
+      assert.equal(persisted().progress["integers-1"].failedChecks[1], 2);
       type("#answer", "-3");
       submit("#answer-form");
       assert.ok(document.querySelector(".feedback.success"));
@@ -631,5 +639,67 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
         "A second load must not remap or duplicate completed questions",
       );
     },
+  );
+});
+
+test("help unlocks per problem and survives navigation and reload", async () => {
+  stored.clear();
+  mount();
+  await import("../dist/app.js?help-gates");
+  click("lesson:integers-1");
+  click("begin-practice");
+  const available = (action) =>
+    !!document.querySelector(`[data-action="${action}"]`);
+  submit("#answer-form");
+  assert.equal(
+    available("hint"),
+    false,
+    "Empty submissions do not unlock help",
+  );
+  type(
+    "#answer",
+    lessons.find((l) => l.id === "integers-1").problems[0].answer,
+  );
+  submit("#answer-form");
+  assert.equal(
+    available("hint"),
+    false,
+    "Correct submissions do not unlock help",
+  );
+  click("next-question");
+  type("#answer", "999");
+  submit("#answer-form");
+  assert.equal(available("hint"), true);
+  assert.equal(available("reveal"), false);
+  assert.equal(
+    document.querySelector(".hint-box"),
+    null,
+    "Hint content still requires a click",
+  );
+  click("view:lab");
+  click("view:lessons");
+  assert.equal(available("hint"), true);
+  assert.equal(available("reveal"), false);
+  click("next-question");
+  assert.equal(available("hint"), false);
+  assert.equal(available("reveal"), false);
+  click("previous-question");
+  submit("#answer-form");
+  assert.equal(available("reveal"), true);
+  assert.equal(document.querySelector(".solution-answer"), null);
+  click("reveal");
+  mount();
+  await import("../dist/app.js?help-reload");
+  assert.equal(available("hint"), true);
+  assert.equal(available("reveal"), true);
+  assert.ok(document.querySelector(".solution-answer"));
+  assert.equal(persisted().progress["integers-1"].failedChecks[1], 2);
+  click("all-lessons");
+  click("lesson:integers-2");
+  click("begin-practice");
+  assert.equal(
+    available("hint"),
+    false,
+    "Another lesson has its own attempt counts",
   );
 });

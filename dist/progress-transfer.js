@@ -35,6 +35,27 @@ export function normalizeProgress(value) {
         throw Error("The saved answers are invalid.");
       answers[k] = v;
     }
+    let failedChecks;
+    if (p.failedChecks !== undefined) {
+      if (
+        !p.failedChecks ||
+        typeof p.failedChecks !== "object" ||
+        Array.isArray(p.failedChecks)
+      )
+        throw Error("The saved answer attempts are invalid.");
+      failedChecks = {};
+      for (const [key, count] of Object.entries(p.failedChecks)) {
+        if (
+          !/^\d+$/.test(key) ||
+          Number(key) >= lesson.problems.length ||
+          !Number.isInteger(count) ||
+          count < 0 ||
+          count > 2
+        )
+          throw Error("The saved answer attempts are invalid.");
+        failedChecks[key] = count;
+      }
+    }
     progress[lesson.id] = {
       index:
         Number.isInteger(p.index) &&
@@ -47,6 +68,7 @@ export function normalizeProgress(value) {
       answers,
       hints: indices(p.hints || [], lesson.problems.length),
       reveals: indices(p.reveals || [], lesson.problems.length),
+      ...(failedChecks ? { failedChecks } : {}),
     };
   }
   if (!Object.keys(progress).length)
@@ -106,6 +128,24 @@ export function mergeProgress(current, incoming) {
           answers: { ...old.answers, ...p.answers },
           hints: [...new Set([...(old.hints || []), ...p.hints])],
           reveals: [...new Set([...(old.reveals || []), ...p.reveals])],
+          ...(old.failedChecks || p.failedChecks
+            ? {
+                failedChecks: Object.fromEntries(
+                  [
+                    ...new Set([
+                      ...Object.keys(old.failedChecks || {}),
+                      ...Object.keys(p.failedChecks || {}),
+                    ]),
+                  ].map((key) => [
+                    key,
+                    Math.max(
+                      old.failedChecks?.[key] || 0,
+                      p.failedChecks?.[key] || 0,
+                    ),
+                  ]),
+                ),
+              }
+            : {}),
         }
       : p;
   }

@@ -85,3 +85,34 @@ test("every rendered worked-equation line is mathematically equivalent", () => {
       }
   }
 });
+
+test("help unlock counts round trip, validate, and merge without relocking", () => {
+  const withAttempts = {
+    ...state,
+    progress: { "integers-1": { ...p, failedChecks: { 0: 1, 2: 2 } } },
+  };
+  assert.deepEqual(
+    importProgressCode(exportProgressCode(withAttempts)),
+    withAttempts,
+  );
+  const incoming = { "integers-1": { ...p, failedChecks: { 0: 2, 2: 1 } } };
+  const merged = mergeProgress(withAttempts.progress, incoming);
+  assert.deepEqual(merged["integers-1"].failedChecks, { 0: 2, 2: 2 });
+  const legacy = mergeProgress(withAttempts.progress, state.progress);
+  assert.deepEqual(legacy["integers-1"].failedChecks, { 0: 1, 2: 2 });
+  for (const failedChecks of [
+    [],
+    null,
+    { 0: -1 },
+    { 0: 3 },
+    { 0: 0.5 },
+    { 99: 1 },
+    { other: 1 },
+  ])
+    assert.throws(() =>
+      normalizeProgress({
+        ...state,
+        progress: { "integers-1": { ...p, failedChecks } },
+      }),
+    );
+});
