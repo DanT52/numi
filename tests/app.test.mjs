@@ -364,7 +364,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
         click("all-lessons");
       }
       click("view:progress");
-      assert.match(document.querySelector(".stats-grid").textContent, /156/);
+      assert.match(document.querySelector(".stats-grid").textContent, /169/);
       assert.match(document.querySelector(".stats-grid").textContent, /100/);
       assert.equal(
         lessons.filter(

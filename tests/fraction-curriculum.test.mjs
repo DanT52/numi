@@ -30,7 +30,7 @@ test("fraction path progresses from representations to arithmetic and mixed numb
     fractions.reduce((n, l) => n + l.problems.length, 0),
     84,
   );
-  assert.equal(totalProblems, 156);
+  assert.equal(totalProblems, 169);
   for (const [index, l] of fractions.entries()) {
     assert.equal(l.sequence, index + 1);
     assert.equal(l.problems.length, 12);

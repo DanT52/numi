@@ -17,11 +17,12 @@ test("signed path orders the two additions lessons before multiplication and rev
     lessons.filter((l) => l.topic === "integers").map((l) => l.id),
     ["integers-1", "integers-add-subtract-2", "integers-2", "integers-review"],
   );
-  assert.equal(totalProblems, 156);
+  assert.equal(totalProblems, 169);
 });
 test("every advanced addition question uses three numbers and preloads both operations", () => {
   const lesson = lessons.find((l) => l.id === "integers-add-subtract-2");
-  assert.equal(lesson.problems.length, 12);
+  assert.equal(lesson.problems.length, 25);
+  assert.equal(new Set(lesson.problems.map((p) => p.expr)).size, 25);
   for (const problem of lesson.problems) {
     assert.equal(countNumbers(parse(problem.expr)), 3);
     assert.ok(!/[*/^]/.test(problem.expr));
@@ -60,11 +61,11 @@ test("review covers all four operations with standalone and multi-step practice"
 });
 test("new lesson progress round trips alongside existing signed lessons", () => {
   const p = {
-    index: 11,
+    index: 24,
     stage: "practice",
-    solved: [0, 11],
-    answers: { 11: "3" },
-    hints: [11],
+    solved: [0, 11, 24],
+    answers: { 11: "3", 24: "0" },
+    hints: [24],
     reveals: [],
   };
   const state = {

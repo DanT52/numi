@@ -94,10 +94,11 @@ test("expanded curriculum has complete lessons and valid problems", () => {
   for (const lesson of lessons) {
     assert.equal(
       lesson.problems.length,
-      lesson.topic === "fractions" ||
-        ["integers-add-subtract-2", "integers-review"].includes(lesson.id)
-        ? 12
-        : 8,
+      lesson.id === "integers-add-subtract-2"
+        ? 25
+        : lesson.topic === "fractions" || lesson.id === "integers-review"
+          ? 12
+          : 8,
     );
     assert.ok(lesson.example.steps.length >= 3);
     assert.ok(lesson.rule);
