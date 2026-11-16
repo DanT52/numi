@@ -97,7 +97,7 @@ test("expanded curriculum has complete lessons and valid problems", () => {
       lesson.id.startsWith("integers-add-subtract-")
         ? 25
         : lesson.id === "integers-1"
-          ? 16
+          ? 25
           : lesson.id === "integers-review"
             ? 24
             : lesson.topic === "fractions"

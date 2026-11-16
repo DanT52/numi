@@ -36,7 +36,7 @@ test("signed path orders the two additions lessons before multiplication and rev
       "integers-review",
     ],
   );
-  assert.equal(totalProblems, 239);
+  assert.equal(totalProblems, 248);
 });
 test("every advanced addition question uses three numbers and preloads both operations", () => {
   const lesson = lessons.find((l) => l.id === "integers-add-subtract-small-3");
@@ -107,7 +107,7 @@ test("new lesson progress round trips alongside existing signed lessons", () => 
 
 test("larger practice has the requested operand counts and ranges", () => {
   const basic = lessons.find((l) => l.id === "integers-1");
-  assert.equal(basic.problems.length, 16);
+  assert.equal(basic.problems.length, 25);
   for (const [id, count] of [
     ["integers-add-subtract-large-2", 2],
     ["integers-add-subtract-large-3", 3],
