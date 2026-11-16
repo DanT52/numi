@@ -520,7 +520,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       click("view:settings");
       click("generate-progress-code");
       const code = document.querySelector("#progress-code-output").value;
-      assert.match(code, /^NUMI1\./);
+      assert.match(code, /^NUMI2\./);
       assert.ok(
         document.querySelector("#import-progress"),
         "File import is also available in Settings",

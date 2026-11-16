@@ -13,7 +13,7 @@ if (!input || !output) {
   process.exit(1);
 }
 const text = readFileSync(resolve(input), "utf8").trim();
-const progress = text.startsWith("NUMI1.")
+const progress = /^NUMI[12]\./.test(text)
   ? importProgressCode(text)
   : normalizeProgress(JSON.parse(text));
 writeFileSync(resolve(output), exportProgressCode(progress) + "\n");

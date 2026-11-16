@@ -1,5 +1,6 @@
 import { lessons } from "./lessons.js";
 import { migrateLessonProgress } from "./progress-migration.js";
+import { packProgress, unpackProgress } from "./progress-codec.js";
 
 const MAX_SIZE = 200000;
 export function normalizeProgress(value) {
@@ -86,30 +87,37 @@ function checksum(bytes) {
   return hash.toString(16).padStart(8, "0");
 }
 export function exportProgressCode(state) {
-  const bytes = new TextEncoder().encode(
-    JSON.stringify(normalizeProgress(state)),
-  );
+  const bytes = packProgress(normalizeProgress(state));
   const encoded = btoa(
     Array.from(bytes, (b) => String.fromCharCode(b)).join(""),
   )
     .replaceAll("+", "-")
     .replaceAll("/", "_")
     .replace(/=+$/, "");
-  return `NUMI1.${encoded}.${checksum(bytes)}`;
+  const code = `NUMI2.${encoded}.${checksum(bytes)}`;
+  if (code.length > MAX_SIZE)
+    throw Error(
+      "This progress code is too long. Download a progress file instead.",
+    );
+  return code;
 }
 export function importProgressCode(text) {
   const code = String(text).replace(/\s+/g, "");
   if (code.length > MAX_SIZE) throw Error("This progress code is too long.");
-  const match = code.match(/^NUMI1\.([A-Za-z0-9_-]+)\.([0-9a-f]{8})$/);
+  const match = code.match(/^NUMI([12])\.([A-Za-z0-9_-]+)\.([0-9a-f]{8})$/);
   if (!match)
-    throw Error("Paste a complete Numi progress code, starting with NUMI1.");
+    throw Error(
+      "Paste a complete Numi progress code, starting with NUMI1. or NUMI2.",
+    );
   try {
-    const binary = atob(match[1].replaceAll("-", "+").replaceAll("_", "/"));
+    const binary = atob(match[2].replaceAll("-", "+").replaceAll("_", "/"));
     const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-    if (checksum(bytes) !== match[2])
+    if (checksum(bytes) !== match[3])
       throw Error("The progress code has changed. Copy it again in full.");
     return normalizeProgress(
-      JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)),
+      match[1] === "2"
+        ? unpackProgress(bytes)
+        : JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)),
     );
   } catch (e) {
     if (e.message.startsWith("The progress code")) throw e;
