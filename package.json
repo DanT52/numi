@@ -6,9 +6,16 @@
   "scripts": {
     "dev": "node server.mjs",
     "start": "node server.mjs",
-    "test": "node --test tests/math.test.mjs tests/app.test.mjs tests/visual-models.test.mjs tests/progress-transfer.test.mjs tests/fraction-curriculum.test.mjs tests/signed-curriculum.test.mjs"
+    "test": "node --test tests/math.test.mjs tests/app.test.mjs tests/visual-models.test.mjs tests/progress-transfer.test.mjs tests/fraction-curriculum.test.mjs tests/signed-curriculum.test.mjs tests/cloud-progress.test.mjs tests/account.test.mjs",
+    "test:rules": "npx --yes firebase-tools@15.36.0 emulators:exec --project demo-numi --only firestore \"node --test tests/firestore-rules.test.mjs\"",
+    "test:firebase": "npx --yes firebase-tools@15.36.0 emulators:exec --project demo-numi --only auth,firestore \"node --test tests/firestore-rules.test.mjs tests/firebase-client.test.mjs\""
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "6.0.0",
+    "firebase": "13.3.0",
     "linkedom": "0.18.12"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "1.13.6"
   }
 }

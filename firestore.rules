@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owner(uid) { return request.auth != null && request.auth.uid == uid; }
+    function validSave() {
+      let s = request.resource.data;
+      return s.keys().hasOnly(['version', 'epoch', 'revision', 'data', 'updatedAt'])
+        && s.version == 1
+        && s.epoch is int && s.epoch >= 0
+        && s.revision is int && s.revision > 0
+        && s.updatedAt == request.time
+        && s.data is map
+        && s.data.keys().hasAll(['version', 'lesson', 'progress', 'game'])
+        && s.data.keys().hasOnly(['version', 'lesson', 'progress', 'game'])
+        && s.data.version == 1
+        && (s.data.lesson == null || (s.data.lesson is string && s.data.lesson.size() <= 100))
+        && s.data.progress is map && s.data.progress.size() <= 200
+        && s.data.game is map && s.data.game.keys().hasOnly(['streak', 'best'])
+        && s.data.game.streak is int && s.data.game.streak >= 0 && s.data.game.streak <= 1000000
+        && s.data.game.best is int && s.data.game.best >= 0 && s.data.game.best <= 1000000;
+    }
+    function cleared() {
+      let d = request.resource.data.data;
+      return d.progress.size() == 0 && d.lesson == null && d.game.best == 0 && d.game.streak == 0;
+    }
+    match /progress/{uid} {
+      allow read: if owner(uid);
+      allow create: if owner(uid) && validSave()
+        && request.resource.data.revision == 1
+        && (request.resource.data.epoch == 0 || (request.resource.data.epoch == 1 && cleared()));
+      allow update: if owner(uid) && validSave()
+        && request.resource.data.revision == resource.data.revision + 1
+        && (request.resource.data.epoch == resource.data.epoch
+          || (request.resource.data.epoch == resource.data.epoch + 1 && cleared()));
+      // Reset uses a new epoch rather than deleting the document. Old offline
+      // devices must observe the tombstone before they can upload more work.
+      allow delete: if false;
+    }
+  }
+}

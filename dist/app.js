@@ -6,6 +6,7 @@ import {
   checkAnswer,
 } from "./math.js";
 import { migrateLessonProgress } from "./progress-migration.js";
+import { createAccountManager } from "./account.js";
 import { topics, lessons, upcoming, totalProblems } from "./lessons.js";
 import {
   exportProgressCode,
@@ -85,9 +86,11 @@ if (!["lessons", "lab", "progress", "settings"].includes(state.view))
   state.view = "lessons";
 if (!lessons.some((l) => l.id === state.lesson)) state.lesson = null;
 let storageFailed = false;
+let accounts;
 function save() {
   try {
-    localStorage.setItem(STORE, JSON.stringify(state));
+    if (accounts) accounts.save(state);
+    else localStorage.setItem(STORE, JSON.stringify(state));
   } catch {
     storageFailed = true;
     document
@@ -102,7 +105,8 @@ let transferCode = "",
   transferDraft = "",
   transferStatus = "";
 let deleteProgressPending = false,
-  deleteProgressStatus = "";
+  deleteProgressStatus = "",
+  deleteProgressBusy = false;
 let lab = {
   a: -3,
   b: 5,
@@ -198,7 +202,7 @@ function header() {
     )
     .join(
       "",
-    )}</nav><div class="header-right"><span class="saved-label">${icon("check")} ${storageFailed ? "Progress stays in this tab" : "Saved on this device"}</span>${button(icon("calculator") + "<span>Quick tools</span>", "open-tools", "btn btn-small btn-outline")}<span class="header-companion">${companionImage("matcha", "", "Your study companion")}</span></div></div></header>`;
+    )}</nav><div class="header-right"><span class="saved-label">${icon("check")} <span data-cloud-status>${storageFailed ? "Progress stays in this tab" : esc(accounts?.label() || "Saved on this device")}</span></span>${button(accounts?.user ? "Account" : "Sign in", "open-account", "btn btn-small btn-outline account-nav")}${button(icon("calculator") + "<span>Quick tools</span>", "open-tools", "btn btn-small btn-outline")}<span class="header-companion">${companionImage("matcha", "", "Your study companion")}</span></div></div></header>`;
 }
 function heroArt() {
   return `<div class="hero-art"><div class="companion-welcome">${companionImage("matcha", "", "Your companion is ready with a cup of matcha")}</div><div class="hero-equation" aria-label="Negative three plus five equals two">${math("-3+5")}<span>=</span><b>2</b></div><div class="garden-points">${icon("leaf")} ${solvedCount() * 10} leaf points earned <span>·</span> ${completedCount()} lessons complete</div></div>`;
@@ -264,10 +268,33 @@ function restoreProgress(imported) {
   save();
 }
 function deleteProgressUI() {
-  return `<section class="progress-delete" aria-labelledby="delete-progress-title"><h2 id="delete-progress-title">Delete all progress</h2><p>Remove all saved answers, solved problems, hints, lesson positions, points, and streaks on this device. Your appearance settings are kept.</p>${deleteProgressPending ? `<div class="delete-confirmation" role="group" aria-labelledby="delete-confirm-title" aria-describedby="delete-confirm-description"><h3 id="delete-confirm-title">Delete all your progress?</h3><p id="delete-confirm-description">This cannot be undone. Export your progress first if you want a backup.</p><div class="transfer-actions">${button("Cancel", "cancel-delete-progress", "btn btn-outline", 'id="cancel-delete-progress"')}${button("Confirm delete progress", "confirm-delete-progress", "btn btn-danger")}</div></div>` : button("Delete all progress", "delete-progress", "btn btn-outline btn-danger-outline", 'aria-expanded="false"')}<p class="transfer-status" role="status">${esc(deleteProgressStatus)}</p></section>`;
+  return `<section class="progress-delete" aria-labelledby="delete-progress-title"><h2 id="delete-progress-title">Delete all progress</h2><p>Remove all saved answers, solved problems, hints, lesson positions, points, and streaks ${accounts?.user ? "from your account on all devices" : "saved as a guest on this device"}. Your appearance settings are kept.</p>${deleteProgressPending ? `<div class="delete-confirmation" role="group" aria-labelledby="delete-confirm-title" aria-describedby="delete-confirm-description"><h3 id="delete-confirm-title">Delete all your progress?</h3><p id="delete-confirm-description">This cannot be undone. Export your progress first if you want a backup.</p><div class="transfer-actions">${button("Cancel", "cancel-delete-progress", "btn btn-outline", `id="cancel-delete-progress" ${deleteProgressBusy ? "disabled" : ""}`)}${button(deleteProgressBusy ? "Deleting..." : "Confirm delete progress", "confirm-delete-progress", "btn btn-danger", deleteProgressBusy ? "disabled" : "")}</div></div>` : button("Delete all progress", "delete-progress", "btn btn-outline btn-danger-outline", 'aria-expanded="false"')}<p class="transfer-status" role="status">${esc(deleteProgressStatus)}</p></section>`;
 }
-function deleteAllProgress() {
+async function deleteAllProgress() {
   if (!deleteProgressPending || state.view !== "settings") return;
+  if (deleteProgressBusy) return;
+  if (accounts?.user) {
+    deleteProgressBusy = true;
+    deleteProgressStatus = "Deleting account progress…";
+    render();
+    try {
+      await accounts.resetProgress();
+      feedback = null;
+      transferCode = transferDraft = transferStatus = "";
+      deleteProgressPending = false;
+      deleteProgressStatus =
+        "All progress deleted from your account and this device.";
+      if (overlay) closeTools();
+    } catch (error) {
+      deleteProgressStatus =
+        error.message ||
+        "Could not delete account progress. Your saved work is kept.";
+    } finally {
+      deleteProgressBusy = false;
+      render();
+    }
+    return;
+  }
   const cleared = {
     version: 1,
     view: "settings",
@@ -337,7 +364,7 @@ function lessonView() {
     problem = l.problems[p.index],
     canHint = helpAvailable(p, 1),
     canExplain = helpAvailable(p, 2);
-  return `<div class="lesson-breadcrumb">${button(icon("back") + "All lessons", "all-lessons", "text-button")}<span>/</span><span>${t.title}</span></div><div class="lesson-layout"><aside class="lesson-sidebar"><span class="topic-icon ${t.color}">${icon(t.icon)}</span><span class="eyebrow muted">${t.short}</span><h2>${l.title}</h2><p>${l.subtitle}</p><div class="mini-progress"><span>${p.solved.length} of ${l.problems.length} solved</span><div class="progress-track"><span style="width:${(p.solved.length / l.problems.length) * 100}%"></span></div></div>${button(icon("book") + " Worked example", "example", "sidebar-example " + (example ? "selected" : ""))}<div class="question-dots" aria-label="Practice problems">${l.problems.map((_, i) => button(p.solved.includes(i) ? icon("check") : String(i + 1), `question:${i}`, `question-dot ${!example && p.index === i ? "selected" : ""} ${p.solved.includes(i) ? "solved" : ""}`, `aria-label="Problem ${i + 1}${p.solved.includes(i) ? ", solved" : ""}"`)).join("")}</div><div class="sidebar-tip">${icon("lab")}<strong>Need a different perspective?</strong><p>Your work stays right here when you open a visual aid.</p>${button("Open visual tools " + icon("arrow"), "open-tools", "text-button")}</div></aside><section class="lesson-workspace"><div class="workspace-top"><span class="eyebrow muted">${example ? "FIRST, LET’S WALK THROUGH IT" : `YOUR TURN · PROBLEM ${p.index + 1} OF ${l.problems.length}`}</span><span class="badge">${icon("check")} ${p.solved.length === l.problems.length ? "Lesson complete" : "At your own pace"}</span></div>${companionCard()}${example ? `<h1>Start with an example.</h1><div class="rule-callout">${icon("info")}<p>${l.rule}</p></div><div class="example-equation">${math(l.example.expr)}</div><ol class="example-steps">${exampleSteps(l.example)}</ol>${l.moreExamples?.length ? moreLessonExamples(l.moreExamples) : ""}<div class="workspace-bottom"><span></span>${button("Try it yourself " + icon("arrow"), "begin-practice", "btn btn-primary")}</div>` : `<h1>${problem.type === "percent" ? "Convert to a percentage." : problem.type === "prime" ? "Prime factorization" : "Practice"}</h1><p class="workspace-intro">${esc(problem.prompt)}</p><div class="practice-equation">${practiceMath(problem)}</div><form id="answer-form"><label for="answer">Your answer ${problem.type === "percent" ? "<span>(as a percentage)</span>" : ""}</label><div class="answer-row"><input id="answer" name="answer" type="text" autocomplete="off" spellcheck="false" placeholder="${problem.type === "prime" ? "e.g. 2^2 * 3" : problem.type === "fraction" ? "e.g. 3/4 or 1 1/2" : "Type your answer…"}" value="${esc(p.answers[p.index] || "")}" aria-describedby="answer-format feedback">${button("Check answer " + icon("check"), "check-answer", "btn btn-primary", 'type="submit"')}</div><small id="answer-format">${problem.type === "prime" ? "Use * to multiply and ^ for exponents." : problem.type === "percent" ? "Enter a number like 75, or write 75%." : problem.type === "decimal" ? "Enter a decimal, like 0.75." : "Fractions (3/4), mixed numbers (1 1/2), and decimals are welcome."}</small></form><div id="feedback" aria-live="polite">${feedback ? `<div class="feedback ${feedback.correct ? "success" : "retry"}">${icon(feedback.correct ? "check" : "info")}<span>${esc(feedback.message)}</span></div>` : p.solved.includes(p.index) ? `<div class="feedback success">${icon("check")} You’ve solved this one. Nice work!</div>` : ""}</div><div class="help-row">${canHint ? button(icon("spark") + (p.hints.includes(p.index) ? "Hide hint" : "Give me a hint"), "hint", "text-button") : ""}${button(icon("lab") + "Visualize it", "visualize-problem", "text-button")}${canExplain ? button(p.reveals.includes(p.index) ? "Hide explanation" : "See explanation", "reveal", "text-button") : ""}</div>${canHint && p.hints.includes(p.index) ? `<div class="hint-box"><strong>A little nudge</strong><p>${esc(problem.hint)}</p></div>` : ""}${canExplain && p.reveals.includes(p.index) ? `<div class="hint-box"><strong>Let’s work through it</strong><p>${esc(problem.solution)}</p><div class="solution-answer">Answer: ${math(problem.answer)}${problem.type === "percent" ? "%" : ""}</div><small>Read it through, then try entering the answer yourself.</small></div>` : ""}<div class="workspace-bottom">${button(icon("back") + "Previous", "previous-question", "btn btn-outline")}${p.index < l.problems.length - 1 ? button("Next problem " + icon("arrow"), "next-question", "btn btn-primary") : button((p.solved.length === l.problems.length ? "Lesson complete" : "Review my progress") + " " + icon("arrow"), "lesson-review", "btn btn-primary")}</div>`}</section></div>`;
+  return `<div class="lesson-breadcrumb">${button(icon("back") + "All lessons", "all-lessons", "text-button")}<span>/</span><span>${t.title}</span></div><div class="lesson-layout"><aside class="lesson-sidebar"><span class="topic-icon ${t.color}">${icon(t.icon)}</span><span class="eyebrow muted">${t.short}</span><h2>${l.title}</h2><p>${l.subtitle}</p><div class="mini-progress"><span>${p.solved.length} of ${l.problems.length} solved</span><div class="progress-track"><span style="width:${(p.solved.length / l.problems.length) * 100}%"></span></div></div>${button(icon("book") + " Worked example", "example", "sidebar-example " + (example ? "selected" : ""))}<div class="question-dots" aria-label="Practice problems">${l.problems.map((_, i) => button(p.solved.includes(i) ? icon("check") : String(i + 1), `question:${i}`, `question-dot ${!example && p.index === i ? "selected" : ""} ${p.solved.includes(i) ? "solved" : ""}`, `aria-label="Problem ${i + 1}${p.solved.includes(i) ? ", solved" : ""}"`)).join("")}</div><div class="sidebar-tip">${icon("lab")}<strong>Need a different perspective?</strong><p>Your work stays right here when you open a visual aid.</p>${button("Open visual tools " + icon("arrow"), "open-tools", "text-button")}</div></aside><section class="lesson-workspace"><div class="workspace-top"><span class="eyebrow muted">${example ? "FIRST, LET’S WALK THROUGH IT" : `YOUR TURN · PROBLEM ${p.index + 1} OF ${l.problems.length}`}</span><span class="badge">${icon("check")} ${p.solved.length === l.problems.length ? "Lesson complete" : "At your own pace"}</span></div>${companionCard()}${example ? `<h1>Start with an example.</h1><div class="rule-callout">${icon("info")}<p>${l.rule}</p></div><div class="example-equation">${math(l.example.expr)}</div><ol class="example-steps">${exampleSteps(l.example)}</ol>${l.moreExamples?.length ? moreLessonExamples(l.moreExamples) : ""}<div class="workspace-bottom"><span></span>${button("Try it yourself " + icon("arrow"), "begin-practice", "btn btn-primary")}</div>` : `<h1>${problem.type === "percent" ? "Convert to a percentage." : problem.type === "prime" ? "Prime factorization" : "Practice"}</h1><p class="workspace-intro">${esc(problem.prompt)}</p><div class="practice-equation">${practiceMath(problem)}</div><form id="answer-form"><label for="answer">Your answer ${problem.type === "percent" ? "<span>(as a percentage)</span>" : ""}</label><div class="answer-row"><input id="answer" name="answer" type="text" maxlength="500" autocomplete="off" spellcheck="false" placeholder="${problem.type === "prime" ? "e.g. 2^2 * 3" : problem.type === "fraction" ? "e.g. 3/4 or 1 1/2" : "Type your answer…"}" value="${esc(p.answers[p.index] || "")}" aria-describedby="answer-format feedback">${button("Check answer " + icon("check"), "check-answer", "btn btn-primary", 'type="submit"')}</div><small id="answer-format">${problem.type === "prime" ? "Use * to multiply and ^ for exponents." : problem.type === "percent" ? "Enter a number like 75, or write 75%." : problem.type === "decimal" ? "Enter a decimal, like 0.75." : "Fractions (3/4), mixed numbers (1 1/2), and decimals are welcome."}</small></form><div id="feedback" aria-live="polite">${feedback ? `<div class="feedback ${feedback.correct ? "success" : "retry"}">${icon(feedback.correct ? "check" : "info")}<span>${esc(feedback.message)}</span></div>` : p.solved.includes(p.index) ? `<div class="feedback success">${icon("check")} You’ve solved this one. Nice work!</div>` : ""}</div><div class="help-row">${canHint ? button(icon("spark") + (p.hints.includes(p.index) ? "Hide hint" : "Give me a hint"), "hint", "text-button") : ""}${button(icon("lab") + "Visualize it", "visualize-problem", "text-button")}${canExplain ? button(p.reveals.includes(p.index) ? "Hide explanation" : "See explanation", "reveal", "text-button") : ""}</div>${canHint && p.hints.includes(p.index) ? `<div class="hint-box"><strong>A little nudge</strong><p>${esc(problem.hint)}</p></div>` : ""}${canExplain && p.reveals.includes(p.index) ? `<div class="hint-box"><strong>Let’s work through it</strong><p>${esc(problem.solution)}</p><div class="solution-answer">Answer: ${math(problem.answer)}${problem.type === "percent" ? "%" : ""}</div><small>Read it through, then try entering the answer yourself.</small></div>` : ""}<div class="workspace-bottom">${button(icon("back") + "Previous", "previous-question", "btn btn-outline")}${p.index < l.problems.length - 1 ? button("Next problem " + icon("arrow"), "next-question", "btn btn-primary") : button((p.solved.length === l.problems.length ? "Lesson complete" : "Review my progress") + " " + icon("arrow"), "lesson-review", "btn btn-primary")}</div>`}</section></div>`;
 }
 function progressView() {
   const solved = solvedCount(),
@@ -380,7 +407,7 @@ function settingsView() {
     ["ocean", "Ocean", "Clear blue & sea foam"],
     ["warm", "Warm clay", "Terracotta & soft sand"],
   ];
-  return `<div class="page-heading"><h1>Settings</h1></div><div class="settings-layout"><section class="settings-card"><h2>Appearance</h2><p>Changes apply straight away and are saved in this browser.</p><fieldset class="theme-options"><legend>Color theme</legend>${themes.map(([id, title, description]) => `<label class="theme-option ${appearance.theme === id ? "selected" : ""}"><input type="radio" name="color-theme" value="${id}" data-setting="theme" ${appearance.theme === id ? "checked" : ""}><span class="theme-swatch ${id}" aria-hidden="true"></span><span><strong>${title}</strong><small>${description}</small></span></label>`).join("")}</fieldset><div class="settings-fields"><label><span>Text size</span><select data-setting="size" aria-label="Text size">${[
+  return `<div class="page-heading"><h1>Settings</h1></div><div class="settings-layout"><section class="settings-card">${accounts?.view() || ""}<h2>Appearance</h2><p>Changes apply straight away and are saved in this browser.</p><fieldset class="theme-options"><legend>Color theme</legend>${themes.map(([id, title, description]) => `<label class="theme-option ${appearance.theme === id ? "selected" : ""}"><input type="radio" name="color-theme" value="${id}" data-setting="theme" ${appearance.theme === id ? "checked" : ""}><span class="theme-swatch ${id}" aria-hidden="true"></span><span><strong>${title}</strong><small>${description}</small></span></label>`).join("")}</fieldset><div class="settings-fields"><label><span>Text size</span><select data-setting="size" aria-label="Text size">${[
     ["standard", "Standard"],
     ["comfortable", "Comfortable (default)"],
     ["large", "Extra large"],
@@ -530,6 +557,18 @@ function render() {
   }
   save();
 }
+function renderKeepingAnswer() {
+  const input = document.querySelector("#answer");
+  const focused = input && document.activeElement === input;
+  const start = input?.selectionStart,
+    end = input?.selectionEnd;
+  render();
+  if (focused) {
+    const next = document.querySelector("#answer");
+    next?.focus({ preventScroll: true });
+    next?.setSelectionRange?.(start, end);
+  }
+}
 function rerenderTools() {
   if (overlay) {
     document.querySelector("#overlay-tools").innerHTML = toolsUI();
@@ -660,9 +699,14 @@ document.addEventListener("click", (e) => {
   if (!el || el.disabled) return;
   const [action, ...rest] = el.dataset.action.split(":"),
     value = rest.join(":");
+  if (deleteProgressBusy) return;
+  if (accounts?.handleClick(action, value)) return;
   if (action.startsWith("line-") && !commitLineInputs()) return;
   if (el.tagName === "A") e.preventDefault();
-  if (action === "delete-progress" && state.view === "settings") {
+  if (action === "open-account") {
+    go("settings");
+    document.querySelector("#account-title")?.focus();
+  } else if (action === "delete-progress" && state.view === "settings") {
     deleteProgressPending = true;
     deleteProgressStatus = "";
     render();
@@ -846,9 +890,11 @@ document.addEventListener("click", (e) => {
     render();
   } else if (action === "export-progress") {
     save();
+    const backup = { ...state };
+    delete backup.cloud;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(
-      new Blob([JSON.stringify(state, null, 2)], { type: "application/json" }),
+      new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }),
     );
     a.download = "numi-progress.json";
     a.click();
@@ -856,13 +902,17 @@ document.addEventListener("click", (e) => {
   }
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && deleteProgressPending) {
+  if (e.key === "Escape" && deleteProgressPending && !deleteProgressBusy) {
     deleteProgressPending = false;
     render();
     document.querySelector('[data-action="delete-progress"]')?.focus();
   } else if (e.key === "Escape" && overlay) closeTools();
 });
 document.addEventListener("submit", (e) => {
+  if (e.target.id === "account-form") {
+    e.preventDefault();
+    accounts.submit();
+  }
   if (e.target.id === "answer-form") {
     e.preventDefault();
     checkCurrent();
@@ -974,4 +1024,30 @@ document.addEventListener("change", async (e) => {
     }
   }
 });
+accounts = createAccountManager({
+  getState: () => state,
+  replaceState: (value, accountChanged = false) => {
+    state = value;
+    feedback = null;
+    if (accountChanged) {
+      deleteProgressPending = false;
+      transferCode = transferDraft = transferStatus = "";
+    }
+  },
+  render: renderKeepingAnswer,
+  onStorageError: () => {
+    storageFailed = true;
+  },
+});
 render();
+if (
+  window.location?.protocol === "https:" ||
+  window.location?.protocol === "http:"
+) {
+  accounts.start();
+  window.addEventListener("online", () => accounts.online());
+  window.addEventListener("offline", () => accounts.offline());
+  window.addEventListener("pagehide", () => {
+    accounts.flush()?.catch(() => {});
+  });
+}

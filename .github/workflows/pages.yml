@@ -31,6 +31,13 @@ jobs:
       - run: npm ci
       - run: npm test
 
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - run: npm run test:firebase
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v4
