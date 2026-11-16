@@ -1007,6 +1007,48 @@ footer {
 .transfer-status:empty {
   display: none;
 }
+.progress-delete {
+  margin-top: 30px;
+  border-top: 1px solid var(--border);
+  padding-top: 25px;
+}
+.progress-delete h2 {
+  font-size: 1.3rem;
+}
+.progress-delete p {
+  margin: 12px 0 18px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+.delete-confirmation {
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid #9a302a;
+  border-radius: 10px;
+  background: var(--surface);
+}
+.delete-confirmation h3 {
+  font-size: 1.05rem;
+}
+.delete-confirmation .transfer-actions {
+  margin-bottom: 0;
+}
+.btn-danger-outline {
+  color: #9a302a;
+  border-color: #9a302a;
+}
+.btn-danger {
+  color: #fff;
+  background: #9a302a;
+  border: 1px solid #9a302a;
+}
+.btn-danger:hover,
+.btn-danger-outline:hover {
+  color: #fff;
+  background: #74241f;
+  border-color: #74241f;
+}
 #tools-dialog .line-operation {
   gap: 8px;
   padding: 11px;

@@ -703,3 +703,145 @@ test("help unlocks per problem and survives navigation and reload", async () => 
     "Another lesson has its own attempt counts",
   );
 });
+
+test("Settings deletion needs confirmation, clears persisted work, and keeps appearance", async () => {
+  stored.clear();
+  const saved = {
+    version: 1,
+    view: "settings",
+    topic: "all",
+    lesson: "integers-1",
+    game: { streak: 3, best: 6 },
+    progress: {
+      "integers-1": {
+        index: 1,
+        stage: "practice",
+        solved: [0],
+        answers: { 0: "2", 1: "999" },
+        hints: [1],
+        reveals: [1],
+        failedChecks: { 1: 2 },
+      },
+      "fractions-simplify": {
+        index: 0,
+        stage: "practice",
+        solved: [0],
+        answers: { 0: "1/2" },
+        hints: [],
+        reveals: [],
+      },
+    },
+  };
+  stored.set("numi.progress.v1", JSON.stringify(saved));
+  const appearance = JSON.stringify({
+    theme: "ocean",
+    size: "large",
+    weight: "bold",
+    motion: false,
+  });
+  stored.set("numi.appearance.v1", appearance);
+  stored.set("unrelated-data", "keep me");
+  mount();
+  await import("../dist/app.js?delete-progress");
+  click("generate-progress-code");
+  const backup = document.querySelector("#progress-code-output").value;
+  type("#progress-code-input", "unfinished import");
+  const before = JSON.stringify(persisted());
+  assert.equal(
+    document.querySelector('[data-action="confirm-delete-progress"]'),
+    null,
+  );
+  click("delete-progress");
+  assert.equal(
+    JSON.stringify(persisted()),
+    before,
+    "Opening confirmation does not delete anything",
+  );
+  assert.match(
+    document.querySelector(".delete-confirmation").textContent,
+    /cannot be undone/,
+  );
+  click("cancel-delete-progress");
+  assert.equal(JSON.stringify(persisted()), before);
+  assert.equal(document.querySelector(".delete-confirmation"), null);
+  click("delete-progress");
+  const escape = new window.Event("keydown", { bubbles: true });
+  escape.key = "Escape";
+  document.dispatchEvent(escape);
+  assert.equal(document.querySelector(".delete-confirmation"), null);
+  assert.equal(JSON.stringify(persisted()), before);
+  click("delete-progress");
+  click("view:lessons");
+  click("view:settings");
+  assert.equal(
+    document.querySelector(".delete-confirmation"),
+    null,
+    "Leaving Settings cancels the pending request",
+  );
+  click("delete-progress");
+  click("confirm-delete-progress");
+  const cleared = persisted();
+  assert.equal(cleared.lesson, null);
+  assert.deepEqual(cleared.game, { streak: 0, best: 0 });
+  for (const p of Object.values(cleared.progress)) {
+    assert.equal(p.index, 0);
+    assert.equal(p.stage, "example");
+    assert.deepEqual(p.solved, []);
+    assert.deepEqual(p.answers, {});
+    assert.deepEqual(p.hints, []);
+    assert.deepEqual(p.reveals, []);
+    assert.deepEqual(p.failedChecks || {}, {});
+  }
+  assert.equal(stored.get("numi.appearance.v1"), appearance);
+  assert.equal(stored.get("unrelated-data"), "keep me");
+  assert.equal(document.querySelector("#progress-code-output"), null);
+  assert.equal(document.querySelector("#progress-code-input").value, "");
+  assert.match(
+    document.querySelector(".progress-delete").textContent,
+    /All progress deleted/,
+  );
+  mount();
+  await import("../dist/app.js?deleted-reload");
+  assert.equal(
+    Object.values(persisted().progress).flatMap((p) => p.solved).length,
+    0,
+  );
+  assert.equal(document.documentElement.dataset.theme, "ocean");
+  type("#progress-code-input", backup);
+  click("import-progress-code");
+  assert.equal(
+    Object.values(persisted().progress).flatMap((p) => p.solved).length,
+    2,
+    "An exported NUMI2 backup can restore deleted work",
+  );
+});
+
+test("failed storage writes do not report deletion or discard current progress", async () => {
+  mount();
+  await import("../dist/app.js?delete-storage-failure");
+  click("view:settings");
+  click("delete-progress");
+  const before = stored.get("numi.progress.v1");
+  const originalSetItem = localStorage.setItem;
+  localStorage.setItem = () => {
+    throw Error("Storage unavailable");
+  };
+  try {
+    click("confirm-delete-progress");
+    assert.equal(stored.get("numi.progress.v1"), before);
+    assert.match(
+      document.querySelector(".progress-delete").textContent,
+      /Could not delete saved progress/,
+    );
+    assert.ok(
+      document.querySelector('[data-action="confirm-delete-progress"]'),
+    );
+  } finally {
+    localStorage.setItem = originalSetItem;
+  }
+  click("cancel-delete-progress");
+  assert.equal(
+    Object.values(persisted().progress).flatMap((p) => p.solved).length,
+    2,
+  );
+});

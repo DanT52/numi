@@ -101,6 +101,8 @@ let tool = "line",
 let transferCode = "",
   transferDraft = "",
   transferStatus = "";
+let deleteProgressPending = false,
+  deleteProgressStatus = "";
 let lab = {
   a: -3,
   b: 5,
@@ -261,6 +263,38 @@ function restoreProgress(imported) {
   state.game.streak = 0;
   save();
 }
+function deleteProgressUI() {
+  return `<section class="progress-delete" aria-labelledby="delete-progress-title"><h2 id="delete-progress-title">Delete all progress</h2><p>Remove all saved answers, solved problems, hints, lesson positions, points, and streaks on this device. Your appearance settings are kept.</p>${deleteProgressPending ? `<div class="delete-confirmation" role="group" aria-labelledby="delete-confirm-title" aria-describedby="delete-confirm-description"><h3 id="delete-confirm-title">Delete all your progress?</h3><p id="delete-confirm-description">This cannot be undone. Export your progress first if you want a backup.</p><div class="transfer-actions">${button("Cancel", "cancel-delete-progress", "btn btn-outline", 'id="cancel-delete-progress"')}${button("Confirm delete progress", "confirm-delete-progress", "btn btn-danger")}</div></div>` : button("Delete all progress", "delete-progress", "btn btn-outline btn-danger-outline", 'aria-expanded="false"')}<p class="transfer-status" role="status">${esc(deleteProgressStatus)}</p></section>`;
+}
+function deleteAllProgress() {
+  if (!deleteProgressPending || state.view !== "settings") return;
+  const cleared = {
+    version: 1,
+    view: "settings",
+    topic: "all",
+    lesson: null,
+    progress: {},
+    game: { streak: 0, best: 0 },
+  };
+  try {
+    // Persist the reset before changing the current session or reporting success.
+    localStorage.setItem(STORE, JSON.stringify(cleared));
+  } catch {
+    deleteProgressStatus =
+      "Could not delete saved progress. Check browser storage permissions and try again.";
+    render();
+    return;
+  }
+  state = cleared;
+  storageFailed = false;
+  feedback = null;
+  transferCode = transferDraft = transferStatus = "";
+  deleteProgressPending = false;
+  deleteProgressStatus = "All progress deleted on this device.";
+  if (overlay) closeTools();
+  render();
+  document.querySelector('[data-action="delete-progress"]')?.focus();
+}
 async function copyProgressCode() {
   try {
     if (typeof navigator === "undefined" || !navigator.clipboard?.writeText)
@@ -367,7 +401,7 @@ function settingsView() {
     )
     .join(
       "",
-    )}</select><small>A little more definition when you need it.</small></label></div><label class="motion-setting"><input type="checkbox" data-setting="motion" ${appearance.motion ? "checked" : ""}><span><strong>Gentle celebrations</strong><small>Small companion animations after a new answer. Your system’s reduced-motion preference is always respected.</small></span></label>${button("Restore appearance defaults", "reset-appearance", "btn btn-outline")}<div class="settings-save-note">${icon("check")} Your answers, position, progress, and appearance are saved locally on this device.</div>${progressTransferUI()}</section><aside class="settings-preview"><div class="preview-card"><span class="eyebrow muted">A LITTLE PREVIEW</span>${companionImage("happy", "", "Your happy study companion")}<h2>Text preview</h2><p>Preview your text and equation settings.</p><div class="preview-equation">${math("1/2+1/4")}<span>=</span>${math("3/4")}</div><span class="btn btn-primary">Button preview</span></div></aside></div>`;
+    )}</select><small>A little more definition when you need it.</small></label></div><label class="motion-setting"><input type="checkbox" data-setting="motion" ${appearance.motion ? "checked" : ""}><span><strong>Gentle celebrations</strong><small>Small companion animations after a new answer. Your system’s reduced-motion preference is always respected.</small></span></label>${button("Restore appearance defaults", "reset-appearance", "btn btn-outline")}<div class="settings-save-note">${icon("check")} Your answers, position, progress, and appearance are saved locally on this device.</div>${progressTransferUI()}${deleteProgressUI()}</section><aside class="settings-preview"><div class="preview-card"><span class="eyebrow muted">A LITTLE PREVIEW</span>${companionImage("happy", "", "Your happy study companion")}<h2>Text preview</h2><p>Preview your text and equation settings.</p><div class="preview-equation">${math("1/2+1/4")}<span>=</span>${math("3/4")}</div><span class="btn btn-primary">Button preview</span></div></aside></div>`;
 }
 function labView() {
   return `<div class="page-heading lab-heading"><div><h1>Visual tools</h1></div></div>${state.lesson ? '<div class="return-banner">' + icon("book") + "<span>Your lesson is saved.</span>" + button("Return to lesson " + icon("arrow"), "return-lesson", "text-button") + "</div>" : ""}<div id="lab-tools">${toolsUI()}</div>`;
@@ -541,6 +575,10 @@ function closeTools() {
 }
 
 function go(view) {
+  if (view !== "settings") {
+    deleteProgressPending = false;
+    deleteProgressStatus = "";
+  }
   state.view = view;
   feedback = null;
   render();
@@ -624,7 +662,18 @@ document.addEventListener("click", (e) => {
     value = rest.join(":");
   if (action.startsWith("line-") && !commitLineInputs()) return;
   if (el.tagName === "A") e.preventDefault();
-  if (action === "reset-appearance") {
+  if (action === "delete-progress" && state.view === "settings") {
+    deleteProgressPending = true;
+    deleteProgressStatus = "";
+    render();
+    document.querySelector("#cancel-delete-progress")?.focus();
+  } else if (action === "cancel-delete-progress") {
+    deleteProgressPending = false;
+    render();
+    document.querySelector('[data-action="delete-progress"]')?.focus();
+  } else if (action === "confirm-delete-progress") {
+    deleteAllProgress();
+  } else if (action === "reset-appearance") {
     appearance = { ...defaults };
     saveAppearance(appearance);
     render();
@@ -807,7 +856,11 @@ document.addEventListener("click", (e) => {
   }
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && overlay) closeTools();
+  if (e.key === "Escape" && deleteProgressPending) {
+    deleteProgressPending = false;
+    render();
+    document.querySelector('[data-action="delete-progress"]')?.focus();
+  } else if (e.key === "Escape" && overlay) closeTools();
 });
 document.addEventListener("submit", (e) => {
   if (e.target.id === "answer-form") {
