@@ -1097,6 +1097,123 @@ footer {
 .account-panel [hidden] {
   display: none !important;
 }
+.module-activities,
+.activity-actions,
+.activity-answer-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.module-activities {
+  margin-top: 18px;
+}
+.module-activities .btn {
+  min-height: 44px;
+}
+.activity-card {
+  max-width: 760px;
+  margin: 28px auto;
+  padding: clamp(20px, 5vw, 44px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+.activity-card h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+.activity-card p {
+  margin: 12px 0;
+}
+.activity-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0 14px;
+}
+.activity-note,
+.activity-form small,
+.quiz-save-status {
+  color: var(--muted);
+}
+.activity-count {
+  font-size: 0.9rem;
+}
+.activity-equation {
+  margin: 20px 0;
+}
+.activity-equation math {
+  color: var(--ink);
+}
+.activity-form {
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+  margin: 18px 0;
+}
+.activity-form label {
+  font-weight: var(--label-weight);
+}
+.activity-form select,
+.activity-form input {
+  min-height: 44px;
+  max-width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 1rem;
+}
+.activity-answer-row {
+  width: 100%;
+}
+.activity-answer-row input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+.activity-actions {
+  margin-top: 16px;
+}
+.activity-actions .btn,
+.activity-form .btn {
+  min-height: 44px;
+}
+.activity-feedback {
+  margin: 20px 0;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--soft);
+}
+.activity-feedback p:last-child {
+  margin-bottom: 0;
+}
+.quiz-header .header-inner {
+  min-height: 58px;
+  align-items: center;
+}
+.quiz-header-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.quiz-header-label .icon {
+  width: 18px;
+  height: 18px;
+}
+.quiz-save-status {
+  margin-left: auto;
+  font-size: 0.8rem;
+}
+@media (max-width: 760px) {
+  .quiz-header {
+    min-height: auto;
+  }
+  .quiz-header .header-inner {
+    padding: 12px 18px;
+  }
+}
 .header-right {
   flex-shrink: 0;
 }

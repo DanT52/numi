@@ -44,6 +44,7 @@ export function createAccountManager({
     message = "",
     syncKind = "guest",
     syncError;
+  let cloudReset = false;
   let key = GUEST,
     transition = 0;
   function load(storageKey) {
@@ -76,9 +77,11 @@ export function createAccountManager({
       (sum, p) => sum + p.solved.length,
       0,
     );
-    const hasWork = Object.values(data.progress).some(
-      (p) => p.solved.length || Object.keys(p.answers).length,
-    );
+    const hasWork =
+      !!data.activityScores ||
+      Object.values(data.progress).some(
+        (p) => p.solved.length || Object.keys(p.answers).length,
+      );
     return { data, solved, hasWork };
   }
   function offerGuest() {
@@ -138,8 +141,12 @@ export function createAccountManager({
     updateStatus();
   }
   function apply(data) {
-    if (!sameProgress(cloudProgress(getState()), data)) {
-      replaceState({ ...getState(), ...data });
+    if (cloudReset || !sameProgress(cloudProgress(getState()), data)) {
+      const next = { ...getState(), ...data };
+      if (!data.activityScores) delete next.activityScores;
+      if (cloudReset) delete next.activity;
+      cloudReset = false;
+      replaceState(next);
       render();
     }
     persist();
@@ -161,6 +168,7 @@ export function createAccountManager({
       cached = load(key);
     let next = cached || blankState();
     metadata = user ? cached?.cloud : undefined;
+    cloudReset = false;
     if (user && signupImport) {
       next = {
         ...next,
@@ -182,6 +190,8 @@ export function createAccountManager({
         },
         onMetadata: (value) => {
           if (run === transition) {
+            if (metadata?.epoch != null && value.epoch !== metadata.epoch)
+              cloudReset = true;
             metadata = value;
             persist();
           }

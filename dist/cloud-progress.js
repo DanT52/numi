@@ -1,4 +1,8 @@
 import { normalizeProgress } from "./progress-transfer.js";
+import {
+  mergeActivityScores,
+  normalizeActivityScores,
+} from "./activity-scores.js";
 
 export const emptyCloudProgress = () => ({
   version: 1,
@@ -38,10 +42,12 @@ export function cloudProgress(value) {
         progress: value.progress,
       })
     : { version: 1, lesson: null, progress: {} };
+  const activityScores = normalizeActivityScores(value.activityScores);
   return {
     version: 1,
     lesson: normalized.lesson,
     progress: normalized.progress,
+    ...(Object.keys(activityScores).length ? { activityScores } : {}),
     game: {
       streak: counter(value.game?.streak),
       best: counter(value.game?.best),
@@ -92,10 +98,15 @@ export function mergeCloudProgress(remote, local, base = emptyCloudProgress()) {
       );
     progress[id] = p;
   }
+  const activityScores = mergeActivityScores(
+    remote.activityScores,
+    local.activityScores,
+  );
   return {
     version: 1,
     lesson: local.lesson !== base.lesson ? local.lesson : remote.lesson,
     progress,
+    ...(Object.keys(activityScores).length ? { activityScores } : {}),
     game: {
       best: Math.max(remote.game.best, local.game.best),
       streak:

@@ -107,6 +107,32 @@ function device(server, initial = emptyCloudProgress(), metadata) {
   };
 }
 
+test("account activity records merge across devices without lowering best scores", async () => {
+  const server = backend();
+  const a = device(server),
+    b = device(server);
+  a.sync.edit({
+    ...data([0]),
+    activityScores: { signedQuizBest: 10, signedQuizPassed: 10, integers: 7 },
+  });
+  b.sync.edit({ ...data([1]), activityScores: { integers: 3, fractions: 4 } });
+  await a.sync.flush();
+  await b.sync.flush();
+  server.broadcast();
+  assert.deepEqual(b.latest.activityScores, {
+    signedQuizBest: 10,
+    signedQuizPassed: 10,
+    fractions: 4,
+    integers: 7,
+  });
+  assert.deepEqual(b.latest.progress["integers-1"].solved, [0, 1]);
+  await b.sync.reset();
+  server.broadcast();
+  assert.equal(a.latest.activityScores, undefined);
+  a.sync.dispose();
+  b.sync.dispose();
+});
+
 test("three-way merge preserves concurrent answers, completion, positions and hint unlocks", () => {
   const base = data([0], { 0: "2", 1: "draft" });
   const left = clone(base),

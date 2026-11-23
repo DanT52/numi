@@ -4,6 +4,7 @@ import { parseHTML } from "linkedom";
 import { lessons } from "../dist/lessons.js";
 import { legacyThreeNumberExpressions } from "../dist/lessons/signed-numbers/legacy-three-number-questions.js";
 import { calculate } from "../dist/math.js";
+import { activityQuestion } from "../dist/activities.js";
 
 const stored = new Map();
 globalThis.localStorage = {
@@ -75,7 +76,106 @@ function submit(id) {
 }
 const persisted = () => JSON.parse(stored.get("numi.progress.v1"));
 
+test("quiz locks tools, records only one answer per question, and saves a pass", async () => {
+  stored.clear();
+  mount();
+  await import("../dist/app.js?quiz");
+  const before = persisted().progress;
+  click("open-tools");
+  click("activity-quiz");
+  assert.match(
+    document.querySelector(".activity-card").textContent,
+    /completed 0 of 6/,
+  );
+  assert.equal(document.querySelector("#tools-dialog"), null);
+  assert.equal(document.querySelector('[data-action="open-tools"]'), null);
+  assert.equal(document.querySelector('[data-action="view:lab"]'), null);
+  submit("#quiz-start-form");
+  submit("#activity-answer-form"); // An empty submit does not consume the attempt.
+  assert.equal(persisted().activity.index, 0);
+  assert.equal(persisted().activity.result, null);
+  const form = document.querySelector("#activity-answer-form");
+  type("#activity-answer", "99999");
+  submit("#activity-answer-form");
+  assert.equal(document.querySelector("#activity-answer-form"), null);
+  assert.match(
+    document.querySelector(".activity-feedback").textContent,
+    /Quiz ended/,
+  );
+  form.dispatchEvent(
+    new window.Event("submit", { bubbles: true, cancelable: true }),
+  );
+  assert.equal(persisted().activity.correctCount, 0);
+  mount();
+  await import("../dist/app.js?quiz-reload");
+  assert.match(
+    document.querySelector(".activity-feedback").textContent,
+    /Quiz ended/,
+  );
+  assert.equal(document.querySelector("#activity-answer-form"), null);
+
+  click("activity-quiz");
+  submit("#quiz-start-form");
+  const coverage = new Set();
+  for (let i = 0; i < 10; i++) {
+    const question = activityQuestion(persisted().activity);
+    coverage.add(question.group);
+    type("#activity-answer", question.answer);
+    submit("#activity-answer-form");
+    if (i < 9) click("activity-next");
+  }
+  assert.equal(coverage.size, 10);
+  assert.match(
+    document.querySelector(".activity-feedback").textContent,
+    /Quiz passed/,
+  );
+  assert.deepEqual(persisted().activityScores, {
+    signedQuizBest: 10,
+    signedQuizPassed: 10,
+  });
+  assert.deepEqual(persisted().progress, before);
+});
+
+test("review is available in each module and warmup explains sign choices", async () => {
+  stored.clear();
+  mount();
+  await import("../dist/app.js?review");
+  assert.equal(
+    document.querySelectorAll('[data-action^="activity-review:"]').length,
+    4,
+  );
+  click("activity-review:integers");
+  assert.ok(document.querySelector('[data-action="open-tools"]'));
+  for (let i = 0; i < 2; i++) {
+    type("#activity-answer", activityQuestion(persisted().activity).answer);
+    submit("#activity-answer-form");
+    click("activity-next");
+  }
+  type("#activity-answer", "99999");
+  submit("#activity-answer-form");
+  assert.equal(persisted().activity.streak, 0);
+  assert.equal(persisted().activityScores.integers, 2);
+  click("activity-exit");
+  assert.match(
+    document.querySelector('[data-action="activity-review:integers"]')
+      .textContent,
+    /Best 2/,
+  );
+  click("activity-warmup");
+  const rule = activityQuestion(persisted().activity);
+  click(`activity-sign:${rule.sign}`);
+  assert.match(
+    document.querySelector(".activity-feedback").textContent,
+    /Two positive numbers/,
+  );
+  assert.equal(persisted().activity.correctCount, 1);
+  click("activity-next");
+  assert.equal(persisted().activity.index, 1);
+  stored.clear();
+});
+
 test("lesson, persistence, visual tools, and calculator user flows", async (t) => {
+  stored.clear();
   mount();
   await import("../dist/app.js");
   await t.test("catalog has all lessons and future curriculum", () => {

@@ -7,6 +7,18 @@ import {
 } from "./math.js";
 import { migrateLessonProgress } from "./progress-migration.js";
 import { createAccountManager } from "./account.js";
+import {
+  activityIsOver,
+  activityQuestion,
+  startActivity,
+  checkActivity,
+  nextActivityQuestion,
+} from "./activities.js";
+import { activityLinks, activityView, quizSetup } from "./activity-view.js";
+import {
+  mergeActivityScores,
+  normalizeActivityScores,
+} from "./activity-scores.js";
 import { topics, lessons, upcoming, totalProblems } from "./lessons.js";
 import {
   exportProgressCode,
@@ -85,6 +97,7 @@ let state = readState() || {
 if (!["lessons", "lab", "progress", "settings"].includes(state.view))
   state.view = "lessons";
 if (!lessons.some((l) => l.id === state.lesson)) state.lesson = null;
+state.activityScores = normalizeActivityScores(state.activityScores);
 let storageFailed = false;
 let accounts;
 function save() {
@@ -186,6 +199,13 @@ const tools = [
 ];
 
 function header() {
+  if (quizLocked()) {
+    return `<header class="header quiz-header"><div class="header-inner">
+      <span class="brand">numi<span class="brand-dot">.</span></span>
+      <span class="quiz-header-label">${icon("lock")} Quiz mode</span>
+      <span data-cloud-status class="quiz-save-status">${esc(accounts?.label() || "Saved on this device")}</span>
+    </div></header>`;
+  }
   return `<header class="header"><div class="header-inner"><a class="brand" href="#" data-action="home"><span class="brand-mark">n<span>✦</span></span>numi<span class="brand-dot">.</span></a><nav class="main-nav" aria-label="Main navigation">${[
     ["lessons", "Lessons", "book"],
     ["lab", "Visual lab", "lab"],
@@ -241,7 +261,7 @@ function topicCard(t) {
     })
     .join(
       "",
-    )}</div>${ls.length > 3 ? button((expanded ? "Show fewer lessons" : `Show all ${ls.length} lessons`) + icon("chevron"), `toggle-topic:${t.id}`, "text-button lesson-list-toggle", `aria-expanded="${expanded}" aria-controls="lessons-${t.id}"`) : ""}<div class="card-bottom"><span>${ls.length} guided lessons</span><span>${done ? `${done}/${ls.reduce((n, l) => n + l.problems.length, 0)} solved` : "Beginner friendly"} ${done ? icon("check") : icon("leaf")}</span></div></article>`;
+    )}</div>${ls.length > 3 ? button((expanded ? "Show fewer lessons" : `Show all ${ls.length} lessons`) + icon("chevron"), `toggle-topic:${t.id}`, "text-button lesson-list-toggle", `aria-expanded="${expanded}" aria-controls="lessons-${t.id}"`) : ""}${activityLinks(t.id, state.activityScores)}<div class="card-bottom"><span>${ls.length} guided lessons</span><span>${done ? `${done}/${ls.reduce((n, l) => n + l.problems.length, 0)} solved` : "Beginner friendly"} ${done ? icon("check") : icon("leaf")}</span></div></article>`;
 }
 function comingSoon() {
   return `<section class="coming-soon"><div class="section-heading"><div><span class="eyebrow muted">GROW FROM HERE</span><h2>More to look forward to</h2><p>A strong foundation opens up a whole new world.</p></div><span class="badge">${icon("lock")} To be added</span></div><div class="future-grid">${upcoming.map((group, i) => `<article class="future-card"><div class="future-number">0${i + 2}</div><div><h3>${group.title}</h3><p>${i ? "From your first variable to the coordinate plane." : "Connect everyday questions to everyday math."}</p><details><summary>See ${group.items.length} upcoming topics ${icon("chevron")}</summary><ul>${group.items.map(([name, desc]) => `<li><strong>${name}</strong><span>${desc}</span></li>`).join("")}</ul></details></div></article>`).join("")}</div></section>`;
@@ -259,16 +279,20 @@ function moreLessonExamples(examples) {
   return `<section class="more-examples"><h2>More worked examples</h2>${examples.map((example) => `<details><summary>${esc(example.title)}${icon("chevron")}</summary><div class="example-equation">${math(example.expr)}</div><ol class="example-steps">${exampleSteps(example)}</ol></details>`).join("")}</section>`;
 }
 function progressTransferUI() {
-  return `<section class="progress-transfer" aria-labelledby="transfer-title"><h2 id="transfer-title">Transfer progress</h2><p>Export a code on this device. On another device, paste it below to import your answers and lesson progress. Existing solved problems are kept.</p><div class="transfer-actions">${button("Export progress code", "generate-progress-code", "btn btn-primary")}${button("Download progress file", "export-progress", "btn btn-outline")}</div>${transferCode ? `<label for="progress-code-output">Your progress code</label><textarea id="progress-code-output" rows="4" readonly spellcheck="false">${esc(transferCode)}</textarea>${button("Copy code", "copy-progress-code", "btn btn-outline")}` : ""}<label for="progress-code-input">Import a progress code</label><textarea id="progress-code-input" rows="4" spellcheck="false" autocomplete="off" placeholder="Paste your Numi progress code.">${esc(transferDraft)}</textarea><div class="transfer-actions">${button("Import progress code", "import-progress-code", "btn btn-primary")}<label class="btn btn-outline file-import">Import a progress file<input id="import-progress" type="file" accept="application/json,.json" hidden></label></div><p class="transfer-status" role="status">${esc(transferStatus)}</p></section>`;
+  return `<section class="progress-transfer" aria-labelledby="transfer-title"><h2 id="transfer-title">Transfer progress</h2><p>Export a code on this device. On another device, paste it below to import your answers and lesson progress. Existing solved problems are kept. Use a progress file to include quiz and review scores.</p><div class="transfer-actions">${button("Export progress code", "generate-progress-code", "btn btn-primary")}${button("Download progress file", "export-progress", "btn btn-outline")}</div>${transferCode ? `<label for="progress-code-output">Your progress code</label><textarea id="progress-code-output" rows="4" readonly spellcheck="false">${esc(transferCode)}</textarea>${button("Copy code", "copy-progress-code", "btn btn-outline")}` : ""}<label for="progress-code-input">Import a progress code</label><textarea id="progress-code-input" rows="4" spellcheck="false" autocomplete="off" placeholder="Paste your Numi progress code.">${esc(transferDraft)}</textarea><div class="transfer-actions">${button("Import progress code", "import-progress-code", "btn btn-primary")}<label class="btn btn-outline file-import">Import a progress file<input id="import-progress" type="file" accept="application/json,.json" hidden></label></div><p class="transfer-status" role="status">${esc(transferStatus)}</p></section>`;
 }
 function restoreProgress(imported) {
   state.progress = mergeProgress(state.progress, imported.progress);
   if (imported.lesson) state.lesson = imported.lesson;
   state.game.streak = 0;
+  state.activityScores = mergeActivityScores(
+    state.activityScores,
+    imported.activityScores,
+  );
   save();
 }
 function deleteProgressUI() {
-  return `<section class="progress-delete" aria-labelledby="delete-progress-title"><h2 id="delete-progress-title">Delete all progress</h2><p>Remove all saved answers, solved problems, hints, lesson positions, points, and streaks ${accounts?.user ? "from your account on all devices" : "saved as a guest on this device"}. Your appearance settings are kept.</p>${deleteProgressPending ? `<div class="delete-confirmation" role="group" aria-labelledby="delete-confirm-title" aria-describedby="delete-confirm-description"><h3 id="delete-confirm-title">Delete all your progress?</h3><p id="delete-confirm-description">This cannot be undone. Export your progress first if you want a backup.</p><div class="transfer-actions">${button("Cancel", "cancel-delete-progress", "btn btn-outline", `id="cancel-delete-progress" ${deleteProgressBusy ? "disabled" : ""}`)}${button(deleteProgressBusy ? "Deleting..." : "Confirm delete progress", "confirm-delete-progress", "btn btn-danger", deleteProgressBusy ? "disabled" : "")}</div></div>` : button("Delete all progress", "delete-progress", "btn btn-outline btn-danger-outline", 'aria-expanded="false"')}<p class="transfer-status" role="status">${esc(deleteProgressStatus)}</p></section>`;
+  return `<section class="progress-delete" aria-labelledby="delete-progress-title"><h2 id="delete-progress-title">Delete all progress</h2><p>Remove all saved answers, solved problems, hints, lesson positions, quiz records, and review streaks ${accounts?.user ? "from your account on all devices" : "saved as a guest on this device"}. Your appearance settings are kept.</p>${deleteProgressPending ? `<div class="delete-confirmation" role="group" aria-labelledby="delete-confirm-title" aria-describedby="delete-confirm-description"><h3 id="delete-confirm-title">Delete all your progress?</h3><p id="delete-confirm-description">This cannot be undone. Export your progress first if you want a backup.</p><div class="transfer-actions">${button("Cancel", "cancel-delete-progress", "btn btn-outline", `id="cancel-delete-progress" ${deleteProgressBusy ? "disabled" : ""}`)}${button(deleteProgressBusy ? "Deleting..." : "Confirm delete progress", "confirm-delete-progress", "btn btn-danger", deleteProgressBusy ? "disabled" : "")}</div></div>` : button("Delete all progress", "delete-progress", "btn btn-outline btn-danger-outline", 'aria-expanded="false"')}<p class="transfer-status" role="status">${esc(deleteProgressStatus)}</p></section>`;
 }
 async function deleteAllProgress() {
   if (!deleteProgressPending || state.view !== "settings") return;
@@ -345,7 +369,7 @@ function practiceMath(problem) {
       problem.targetDenominator +
       "</mn></mfrac></math>"
     );
-  const pair = problem.prompt.match(/^Find the (GCF|LCM) of (\d+) and (\d+)/);
+  const pair = problem.prompt?.match(/^Find the (GCF|LCM) of (\d+) and (\d+)/);
   if (pair) {
     return `<span class="math-text">${pair[1]}</span><span class="math-text">(</span>${math(pair[2])}<span class="math-text">,</span>${math(pair[3])}<span class="math-text">)</span>`;
   }
@@ -545,9 +569,35 @@ function calculatorTool() {
 
 function render() {
   applyAppearance(appearance);
+  const activity = state.activity;
+  const signedLessons =
+    activity?.mode === "quiz-setup"
+      ? lessons.filter((lesson) => lesson.topic === "integers")
+      : [];
+  const completed = signedLessons.filter(
+    (lesson) => getProgress(lesson.id).solved.length === lesson.problems.length,
+  ).length;
+  const content =
+    activity?.mode === "quiz-setup"
+      ? quizSetup(completed, signedLessons.length, state.activityScores)
+      : activityQuestion(activity)
+        ? activityView(
+            activity,
+            topics.find((topic) => topic.id === activity.topic)?.title,
+            state.activityScores,
+            practiceMath,
+          )
+        : state.view === "lessons"
+          ? state.lesson
+            ? lessonView()
+            : home()
+          : state.view === "lab"
+            ? labView()
+            : state.view === "settings"
+              ? settingsView()
+              : progressView();
   document.querySelector("#app").innerHTML =
-    header() +
-    `<main id="main" tabindex="-1">${state.view === "lessons" ? (state.lesson ? lessonView() : home()) : state.view === "lab" ? labView() : state.view === "settings" ? settingsView() : progressView()}</main>`;
+    header() + `<main id="main" tabindex="-1">${content}</main>`;
   document.body.classList.toggle("tools-open", overlay);
   if (overlay) {
     updateToolContext();
@@ -558,13 +608,18 @@ function render() {
   save();
 }
 function renderKeepingAnswer() {
-  const input = document.querySelector("#answer");
+  const input = document.querySelector("#answer, #activity-answer");
   const focused = input && document.activeElement === input;
   const start = input?.selectionStart,
     end = input?.selectionEnd;
+  const activity = input?.id === "activity-answer" ? state.activity : null;
   render();
+  if (activity && state.activity === activity) {
+    const next = document.querySelector("#activity-answer");
+    if (next) next.value = input.value;
+  }
   if (focused) {
-    const next = document.querySelector("#answer");
+    const next = document.getElementById(input.id);
     next?.focus({ preventScroll: true });
     next?.setSelectionRange?.(start, end);
   }
@@ -579,6 +634,7 @@ function rerenderTools() {
 }
 let previousFocus;
 function openTools() {
+  if (quizLocked()) return;
   if (overlay) {
     document.querySelector("#tools-dialog").focus();
     return;
@@ -614,6 +670,7 @@ function closeTools() {
 }
 
 function go(view) {
+  delete state.activity;
   if (view !== "settings") {
     deleteProgressPending = false;
     deleteProgressStatus = "";
@@ -622,6 +679,65 @@ function go(view) {
   feedback = null;
   render();
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function quizLocked() {
+  return (
+    state.activity?.mode === "quiz" || state.activity?.mode === "quiz-setup"
+  );
+}
+
+function showActivity(run) {
+  if (!run) return;
+  if (overlay) closeTools();
+  state.view = "lessons";
+  state.activity = run;
+  feedback = null;
+  render();
+  window.scrollTo({ top: 0 });
+  (
+    document.querySelector("#activity-answer") ||
+    document.querySelector("#activity-title")
+  )?.focus();
+}
+
+function submitActivity(answer) {
+  const update = checkActivity(state.activity, answer, state.activityScores);
+  if (!update) return;
+  state.activity = update.run;
+  state.activityScores = update.scores;
+  render();
+  document.querySelector(".activity-feedback")?.focus();
+}
+
+function handleActivityClick(action, value) {
+  if (
+    quizLocked() &&
+    action !== "activity-exit" &&
+    action !== "activity-next" &&
+    !(action === "activity-quiz" && activityIsOver(state.activity))
+  )
+    return false;
+  if (action === "activity-review")
+    showActivity(startActivity("review", value));
+  else if (action === "activity-warmup")
+    showActivity(startActivity("warmup", "integers"));
+  else if (action === "activity-quiz")
+    showActivity({ mode: "quiz-setup", topic: "integers" });
+  else if (action === "activity-exit" && state.activity) {
+    state.topic = state.activity.topic;
+    state.lesson = null;
+    go("lessons");
+  } else if (action === "activity-next" && state.activity) {
+    state.activity = nextActivityQuestion(state.activity);
+    render();
+    (
+      document.querySelector("#activity-answer") ||
+      document.querySelector('[data-action^="activity-sign:"]')
+    )?.focus();
+  } else if (action === "activity-sign" && state.activity?.mode === "warmup")
+    submitActivity(value);
+  else return false;
+  return true;
 }
 function openLesson(id) {
   state.lesson = id;
@@ -700,6 +816,8 @@ document.addEventListener("click", (e) => {
   const [action, ...rest] = el.dataset.action.split(":"),
     value = rest.join(":");
   if (deleteProgressBusy) return;
+  if (handleActivityClick(action, value)) return;
+  if (quizLocked()) return;
   if (accounts?.handleClick(action, value)) return;
   if (action.startsWith("line-") && !commitLineInputs()) return;
   if (el.tagName === "A") e.preventDefault();
@@ -892,6 +1010,7 @@ document.addEventListener("click", (e) => {
     save();
     const backup = { ...state };
     delete backup.cloud;
+    delete backup.activity;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(
       new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }),
@@ -909,6 +1028,29 @@ document.addEventListener("keydown", (e) => {
   } else if (e.key === "Escape" && overlay) closeTools();
 });
 document.addEventListener("submit", (e) => {
+  if (
+    e.target.id === "quiz-start-form" &&
+    state.activity?.mode === "quiz-setup"
+  ) {
+    e.preventDefault();
+    showActivity(
+      startActivity(
+        "quiz",
+        "integers",
+        Number(document.querySelector("#quiz-target").value),
+      ),
+    );
+    return;
+  }
+  if (e.target.id === "activity-answer-form") {
+    e.preventDefault();
+    submitActivity(e.target.querySelector("#activity-answer").value);
+    return;
+  }
+  if (quizLocked()) {
+    e.preventDefault();
+    return;
+  }
   if (e.target.id === "account-form") {
     e.preventDefault();
     accounts.submit();
@@ -1016,7 +1158,11 @@ document.addEventListener("change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
       if (file.size > 100000) throw Error();
-      restoreProgress(normalizeProgress(JSON.parse(await file.text())));
+      const backup = JSON.parse(await file.text());
+      restoreProgress({
+        ...normalizeProgress(backup),
+        activityScores: normalizeActivityScores(backup.activityScores),
+      });
       render();
       toast("Your learning progress has been restored.");
     } catch {
@@ -1028,6 +1174,7 @@ accounts = createAccountManager({
   getState: () => state,
   replaceState: (value, accountChanged = false) => {
     state = value;
+    if (quizLocked() && overlay) closeTools();
     feedback = null;
     if (accountChanged) {
       deleteProgressPending = false;

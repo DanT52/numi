@@ -85,6 +85,30 @@ test("Firestore isolates accounts, validates saves, and protects reset epochs", 
     await assertSucceeds(setDoc(alice, save(1, 3)));
     await assertFails(setDoc(alice, save(0, 4)));
     await assertSucceeds(setDoc(alice, save(1, 4)));
+    const scored = {
+      ...data,
+      activityScores: {
+        signedQuizBest: 10,
+        signedQuizPassed: 10,
+        integers: 17,
+      },
+    };
+    await assertSucceeds(setDoc(alice, save(1, 5, scored)));
+    await assertFails(setDoc(bobAtAlice, save(1, 6, scored)));
+    await assertFails(setDoc(alice, save(1, 6))); // Older clients cannot drop records.
+    await assertFails(
+      setDoc(
+        alice,
+        save(1, 6, { ...scored, activityScores: { integers: 16 } }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        alice,
+        save(1, 6, { ...scored, activityScores: { integers: "17" } }),
+      ),
+    );
+    await assertSucceeds(setDoc(alice, save(2, 6)));
     await assertFails(deleteDoc(alice));
     await assertFails(
       setDoc(
