@@ -13,6 +13,7 @@ import {
   startActivity,
   checkActivity,
   nextActivityQuestion,
+  restoreFixedQuiz,
 } from "./activities.js";
 import { activityLinks, activityView, quizSetup } from "./activity-view.js";
 import {
@@ -98,6 +99,7 @@ if (!["lessons", "lab", "progress", "settings"].includes(state.view))
   state.view = "lessons";
 if (!lessons.some((l) => l.id === state.lesson)) state.lesson = null;
 state.activityScores = normalizeActivityScores(state.activityScores);
+restoreFixedQuiz(state);
 let storageFailed = false;
 let accounts;
 function save() {
@@ -1033,13 +1035,7 @@ document.addEventListener("submit", (e) => {
     state.activity?.mode === "quiz-setup"
   ) {
     e.preventDefault();
-    showActivity(
-      startActivity(
-        "quiz",
-        "integers",
-        Number(document.querySelector("#quiz-target").value),
-      ),
-    );
+    showActivity(startActivity("quiz", "integers"));
     return;
   }
   if (e.target.id === "activity-answer-form") {
@@ -1174,6 +1170,7 @@ accounts = createAccountManager({
   getState: () => state,
   replaceState: (value, accountChanged = false) => {
     state = value;
+    restoreFixedQuiz(state);
     if (quizLocked() && overlay) closeTools();
     feedback = null;
     if (accountChanged) {

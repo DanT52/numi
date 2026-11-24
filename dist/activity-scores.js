@@ -1,6 +1,8 @@
 import { topics } from "./lessons.js";
 
-export const quizTargets = [10, 15, 20];
+export const signedQuizGoal = 10;
+// Keep accepting records from the earlier configurable quiz.
+const savedQuizPasses = [signedQuizGoal, 15, 20];
 const scoreKeys = [
   "signedQuizBest",
   "signedQuizPassed",
@@ -12,8 +14,9 @@ export function normalizeActivityScores(scores) {
   for (const key of scoreKeys) {
     const score = scores?.[key];
     if (!Number.isSafeInteger(score) || score < 1 || score > 1000000) continue;
-    if (key === "signedQuizBest" && score > Math.max(...quizTargets)) continue;
-    if (key === "signedQuizPassed" && !quizTargets.includes(score)) continue;
+    if (key === "signedQuizBest" && score > 20) continue;
+    if (key === "signedQuizPassed" && !savedQuizPasses.includes(score))
+      continue;
     result[key] = score;
   }
   return result;

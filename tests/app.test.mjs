@@ -90,7 +90,13 @@ test("quiz locks tools, records only one answer per question, and saves a pass",
   assert.equal(document.querySelector("#tools-dialog"), null);
   assert.equal(document.querySelector('[data-action="open-tools"]'), null);
   assert.equal(document.querySelector('[data-action="view:lab"]'), null);
+  assert.match(
+    document.querySelector(".activity-card").textContent,
+    /Get 10 correct in a row/,
+  );
+  assert.equal(document.querySelector("#quiz-start-form select"), null);
   submit("#quiz-start-form");
+  assert.equal(persisted().activity.deck.length, 10);
   submit("#activity-answer-form"); // An empty submit does not consume the attempt.
   assert.equal(persisted().activity.index, 0);
   assert.equal(persisted().activity.result, null);
@@ -134,6 +140,18 @@ test("quiz locks tools, records only one answer per question, and saves a pass",
     signedQuizPassed: 10,
   });
   assert.deepEqual(persisted().progress, before);
+  click("activity-exit");
+  assert.match(
+    document.querySelector('[data-action="activity-quiz"] .quiz-mastery')
+      .textContent,
+    /★ Mastered/,
+  );
+  mount();
+  await import("../dist/app.js?quiz-mastery-reload");
+  assert.match(
+    document.querySelector('[data-action="activity-quiz"]').textContent,
+    /Mastered/,
+  );
 });
 
 test("review is available in each module and warmup explains sign choices", async () => {
@@ -162,11 +180,13 @@ test("review is available in each module and warmup explains sign choices", asyn
     /Best 2/,
   );
   click("activity-warmup");
+  assert.equal(document.querySelector(".activity-count"), null);
   const rule = activityQuestion(persisted().activity);
   click(`activity-sign:${rule.sign}`);
-  assert.match(
-    document.querySelector(".activity-feedback").textContent,
-    /Two positive numbers/,
+  assert.ok(
+    document
+      .querySelector(".activity-feedback")
+      .textContent.includes(rule.explanation),
   );
   assert.equal(persisted().activity.correctCount, 1);
   click("activity-next");

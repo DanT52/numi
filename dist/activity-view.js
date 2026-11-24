@@ -1,6 +1,9 @@
 import { escapeHTML as esc, math } from "./math.js";
 import { activityQuestion, activityIsOver } from "./activities.js";
-import { quizTargets } from "./activity-scores.js";
+import { signedQuizGoal } from "./activity-scores.js";
+
+const masteryBadge =
+  '<span class="quiz-mastery"><span aria-hidden="true">★</span> Mastered</span>';
 
 const button = (text, action, primary = false) =>
   `<button type="button" class="btn ${primary ? "btn-primary" : "btn-outline"}" data-action="${action}">${text}</button>`;
@@ -11,24 +14,25 @@ export function activityLinks(topic, scores = {}) {
   return `<div class="module-activities" aria-label="Module activities">
     ${button(review, `activity-review:${topic}`)}
     ${signed ? button("Warmup", "activity-warmup") : ""}
-    ${signed ? button(scores.signedQuizPassed ? `Quiz · Passed ${scores.signedQuizPassed}` : "Quiz", "activity-quiz") : ""}
+    ${signed ? button(scores.signedQuizPassed ? `Quiz ${masteryBadge}` : "Quiz", "activity-quiz") : ""}
   </div>`;
 }
 
 export function quizSetup(completed, total, scores = {}) {
   return `<section class="activity-card" aria-labelledby="activity-title">
-    <h1 id="activity-title" tabindex="-1">Signed numbers quiz</h1>
-    <p>Get every question right in a row. You have one try per question, and a wrong answer ends the attempt.</p>
+    <div class="activity-heading">
+      <h1 id="activity-title" tabindex="-1">Signed numbers quiz</h1>
+      ${scores.signedQuizPassed ? masteryBadge : ""}
+    </div>
+    <p>Get ${signedQuizGoal} correct in a row to pass. You have one try per question, and a wrong answer ends the attempt.</p>
     <p>Hints, explanations, and visual tools are unavailable during the quiz.</p>
     <p>${
       completed === total
         ? "You’ve finished the signed numbers lessons."
         : `You’ve completed ${completed} of ${total} signed numbers lessons. Practicing first can help, and you can start the quiz anytime.`
     }</p>
-    ${scores.signedQuizBest ? `<p>Best streak <strong>${scores.signedQuizBest}</strong>${scores.signedQuizPassed ? ` · Highest pass <strong>${scores.signedQuizPassed} in a row</strong>` : ""}</p>` : ""}
+    ${scores.signedQuizBest && !scores.signedQuizPassed ? `<p>Best streak <strong>${Math.min(scores.signedQuizBest, signedQuizGoal)}</strong></p>` : ""}
     <form id="quiz-start-form" class="activity-form">
-      <label for="quiz-target">Correct answers needed in a row</label>
-      <select id="quiz-target">${quizTargets.map((target, i) => `<option value="${target}"${i === 0 ? " selected" : ""}>${target}</option>`).join("")}</select>
       <button type="submit" class="btn btn-primary">Start quiz</button>
     </form>
     <div class="activity-actions">${button("Back to lessons", "activity-exit")}</div>
@@ -87,14 +91,12 @@ export function activityView(run, title, scores, renderMath) {
     : "";
   const summary = quiz
     ? `Correct in a row <strong>${run.streak} / ${run.deck.length}</strong>`
-    : warmup
-      ? `Rule <strong>${run.index + 1} / ${run.deck.length}</strong>`
-      : `Streak points <strong>${run.streak}</strong> <span>·</span> Best <strong>${scores?.[run.topic] || 0}</strong>`;
+    : `Streak points <strong>${run.streak}</strong> <span>·</span> Best <strong>${scores?.[run.topic] || 0}</strong>`;
 
   return `<section class="activity-card" aria-labelledby="activity-title">
     <div class="activity-heading">
       <h1 id="activity-title" tabindex="-1">${esc(heading)}</h1>
-      <p class="activity-count">${summary}</p>
+      ${!warmup ? `<p class="activity-count">${summary}</p>` : ""}
     </div>
     ${
       quiz

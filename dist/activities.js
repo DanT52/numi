@@ -1,7 +1,7 @@
 import { lessons, topics } from "./lessons.js";
 import { calculate, checkAnswer } from "./math.js";
 import { signedQuizGroups, signedWarmup } from "./signed-activities.js";
-import { mergeActivityScores, quizTargets } from "./activity-scores.js";
+import { mergeActivityScores, signedQuizGoal } from "./activity-scores.js";
 
 const quizGroups = Object.entries(signedQuizGroups).map(
   ([group, expressions]) =>
@@ -33,19 +33,11 @@ function shuffle(items, random) {
   return result;
 }
 
-export function shuffledQuiz(target, random = Math.random) {
-  if (!quizTargets.includes(target)) return [];
-  const groups = quizGroups.map((group) => shuffle(group, random));
-  const deck = [];
-  // Each block of ten includes one question from every group, in random order.
-  for (let round = 0; deck.length < target; round++)
-    deck.push(
-      ...shuffle(
-        groups.map((group) => group[round]),
-        random,
-      ),
-    );
-  return deck.slice(0, target);
+function shuffledQuiz(random) {
+  return shuffle(
+    quizGroups.map((group) => group[Math.floor(random() * group.length)]),
+    random,
+  );
 }
 
 function reviewDeck(topic, last, random) {
@@ -58,12 +50,7 @@ function reviewDeck(topic, last, random) {
   return deck;
 }
 
-export function startActivity(
-  mode,
-  topic,
-  target = quizTargets[0],
-  random = Math.random,
-) {
+export function startActivity(mode, topic, random = Math.random) {
   if (
     !Object.hasOwn(reviewPools, topic) ||
     (mode !== "review" && topic !== "integers")
@@ -71,11 +58,13 @@ export function startActivity(
     return null;
   let deck;
   if (mode === "quiz")
-    deck = shuffledQuiz(target, random).map((problem) =>
-      quizPool.indexOf(problem),
-    );
+    deck = shuffledQuiz(random).map((problem) => quizPool.indexOf(problem));
   if (mode === "review") deck = reviewDeck(topic, undefined, random);
-  if (mode === "warmup") deck = signedWarmup.map((_, i) => i);
+  if (mode === "warmup")
+    deck = shuffle(
+      signedWarmup.map((_, i) => i),
+      random,
+    );
   if (!deck?.length) return null;
   return {
     mode,
@@ -86,6 +75,28 @@ export function startActivity(
     correctCount: 0,
     result: null,
   };
+}
+
+export function restoreFixedQuiz(state) {
+  const run = state.activity;
+  if (run?.mode !== "quiz" || !(run.deck?.length > signedQuizGoal)) return;
+  const deck = run.deck.slice(0, signedQuizGoal);
+  if (run.correctCount < signedQuizGoal) {
+    state.activity = { ...run, deck };
+    return;
+  }
+  state.activity = {
+    ...run,
+    deck,
+    index: signedQuizGoal - 1,
+    streak: signedQuizGoal,
+    correctCount: signedQuizGoal,
+    result: { correct: true },
+  };
+  state.activityScores = mergeActivityScores(state.activityScores, {
+    signedQuizBest: signedQuizGoal,
+    signedQuizPassed: signedQuizGoal,
+  });
 }
 
 export function activityQuestion(run) {
@@ -129,8 +140,7 @@ export function checkActivity(run, answer, scores) {
   const point = run.mode === "review" ? { [run.topic]: next.streak } : {};
   if (run.mode === "quiz") {
     point.signedQuizBest = next.streak;
-    if (next.streak === run.deck.length)
-      point.signedQuizPassed = run.deck.length;
+    if (next.streak === signedQuizGoal) point.signedQuizPassed = signedQuizGoal;
   }
   return { run: next, scores: mergeActivityScores(scores, point) };
 }

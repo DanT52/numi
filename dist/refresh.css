@@ -1140,6 +1140,21 @@ footer {
 .activity-count {
   font-size: 0.9rem;
 }
+.quiz-mastery {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.quiz-mastery [aria-hidden="true"] {
+  color: var(--accent-hover);
+}
 .activity-equation {
   margin: 20px 0;
 }
@@ -1155,7 +1170,6 @@ footer {
 .activity-form label {
   font-weight: var(--label-weight);
 }
-.activity-form select,
 .activity-form input {
   min-height: 44px;
   max-width: 100%;
