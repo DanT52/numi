@@ -12,6 +12,7 @@ export const topics = [
     id: "integers",
     title: "Signed numbers",
     short: "Signed numbers",
+    quizPassKey: "signedQuizPassed",
     description: "Make sense of positives, negatives, and zero.",
     color: "purple",
     icon: "signed",

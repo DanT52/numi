@@ -451,6 +451,7 @@ footer {
   flex-shrink: 0;
 }
 .lesson-list-toggle {
+  align-self: flex-start;
   margin: 12px 0 6px;
   font-size: 0.8rem;
 }
@@ -1109,6 +1110,25 @@ footer {
 }
 .module-activities .btn {
   min-height: 44px;
+}
+.quiz-lesson-link {
+  min-height: 56px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--soft);
+}
+.quiz-lesson-link:hover {
+  border-color: var(--accent);
+}
+.quiz-lesson-link .lesson-number {
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 700;
+}
+.quiz-lesson-link .quiz-mastery {
+  background: var(--surface);
 }
 .activity-card {
   max-width: 760px;

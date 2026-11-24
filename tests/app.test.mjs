@@ -146,6 +146,13 @@ test("quiz locks tools, records only one answer per question, and saves a pass",
       .textContent,
     /★ Mastered/,
   );
+  assert.doesNotMatch(
+    document
+      .querySelector("#lessons-integers")
+      .closest(".topic-card")
+      .querySelector(".card-bottom").textContent,
+    /Module complete/,
+  );
   mount();
   await import("../dist/app.js?quiz-mastery-reload");
   assert.match(
@@ -213,8 +220,13 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
     click("toggle-topic:fractions");
     click("toggle-topic:integers");
     assert.equal(
-      document.querySelectorAll(".lesson-link").length,
+      document.querySelectorAll('[data-action^="lesson:"]').length,
       lessons.length,
+    );
+    assert.equal(
+      document.querySelector("#lessons-integers").lastElementChild.dataset
+        .action,
+      "activity-quiz",
     );
     assert.equal(
       document
@@ -505,15 +517,52 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
         }
         click("all-lessons");
       }
+      const signedStatus = () =>
+        document
+          .querySelector("#lessons-integers")
+          .closest(".topic-card")
+          .querySelector(".card-bottom").textContent;
+      assert.match(signedStatus(), /Quiz remaining/);
+      assert.equal(
+        document.querySelector('[data-module="integers"] .path-node.done'),
+        null,
+      );
+      assert.ok(
+        document.querySelector('[data-module="fractions"] .path-node.done'),
+      );
       click("view:progress");
       assert.match(document.querySelector(".stats-grid").textContent, /248/);
-      assert.match(document.querySelector(".stats-grid").textContent, /100/);
+      assert.match(
+        document.querySelector(".stats-grid").textContent,
+        /3\s*\/ 4Modules completed/,
+      );
       assert.equal(
         lessons.filter(
           (l) => persisted().progress[l.id].solved.length === l.problems.length,
         ).length,
         lessons.length,
       );
+      click("home");
+      click("activity-quiz");
+      submit("#quiz-start-form");
+      for (let i = 0; i < 10; i++) {
+        type("#activity-answer", activityQuestion(persisted().activity).answer);
+        submit("#activity-answer-form");
+        if (i < 9) click("activity-next");
+      }
+      click("activity-exit");
+      assert.match(signedStatus(), /Module complete/);
+      assert.ok(
+        document.querySelector('[data-module="integers"] .path-node.done'),
+      );
+      click("view:progress");
+      assert.match(
+        document.querySelector(".stats-grid").textContent,
+        /4\s*\/ 4Modules completed/,
+      );
+      click("home");
+      click("filter:all");
+      click("view:progress");
     },
   );
   await t.test(

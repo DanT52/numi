@@ -14,8 +14,15 @@ export function activityLinks(topic, scores = {}) {
   return `<div class="module-activities" aria-label="Module activities">
     ${button(review, `activity-review:${topic}`)}
     ${signed ? button("Warmup", "activity-warmup") : ""}
-    ${signed ? button(scores.signedQuizPassed ? `Quiz ${masteryBadge}` : "Quiz", "activity-quiz") : ""}
   </div>`;
+}
+
+export function quizLessonLink(passed) {
+  return `<button type="button" class="lesson-link quiz-lesson-link" data-action="activity-quiz">
+    <span class="lesson-number" aria-hidden="true">Q</span>
+    <span><strong>Module quiz</strong><small>${signedQuizGoal} correct in a row</small></span>
+    ${passed ? masteryBadge : ""}
+  </button>`;
 }
 
 export function quizSetup(completed, total, scores = {}) {

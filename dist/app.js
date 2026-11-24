@@ -15,7 +15,12 @@ import {
   nextActivityQuestion,
   restoreFixedQuiz,
 } from "./activities.js";
-import { activityLinks, activityView, quizSetup } from "./activity-view.js";
+import {
+  activityLinks,
+  activityView,
+  quizLessonLink,
+  quizSetup,
+} from "./activity-view.js";
 import {
   mergeActivityScores,
   normalizeActivityScores,
@@ -191,6 +196,31 @@ const solvedCount = () =>
 const completedCount = () =>
   lessons.filter((l) => getProgress(l.id).solved.length === l.problems.length)
     .length;
+function moduleProgress(topic) {
+  const moduleLessons = lessons.filter((lesson) => lesson.topic === topic.id);
+  let solved = 0,
+    total = 0,
+    completedLessons = 0;
+  for (const lesson of moduleLessons) {
+    const count = getProgress(lesson.id).solved.length;
+    solved += count;
+    total += lesson.problems.length;
+    if (count === lesson.problems.length) completedLessons++;
+  }
+  const lessonsComplete = completedLessons === moduleLessons.length;
+  const quizPassed = !!state.activityScores?.[topic.quizPassKey];
+  return {
+    moduleLessons,
+    solved,
+    total,
+    completedLessons,
+    quizPassed,
+    quizRemaining: lessonsComplete && !!topic.quizPassKey && !quizPassed,
+    complete: lessonsComplete && (!topic.quizPassKey || quizPassed),
+  };
+}
+const completedModuleCount = () =>
+  topics.filter((topic) => moduleProgress(topic).complete).length;
 const tools = [
   ["line", "Number line", "line"],
   ["counters", "Signed counters", "counters"],
@@ -238,18 +268,34 @@ function home() {
       "",
     )}</div></section><aside class="dashboard-aside"><div class="journey-card"><div class="aside-title">${icon("leaf")}<h3>Your learning path</h3></div><p>Every small step counts.</p><div class="progress-stat"><b>${count}<span> / ${totalProblems}</span></b><span>problems solved</span></div><div class="progress-track"><span style="width:${(count / totalProblems) * 100}%"></span></div><div class="path-list">${topics
     .map((t, i) => {
-      const done = lessons
-        .filter((l) => l.topic === t.id)
-        .reduce((a, l) => a + getProgress(l.id).solved.length, 0);
-      return `<div class="path-item"><span class="path-node ${done === lessons.filter((l) => l.topic === t.id).reduce((n, l) => n + l.problems.length, 0) ? "done" : i === 0 ? "current" : ""}">${done === lessons.filter((l) => l.topic === t.id).reduce((n, l) => n + l.problems.length, 0) ? "✓" : String(i + 1).padStart(2, "0")}</span><div><strong>${t.short}</strong><small>${done === lessons.filter((l) => l.topic === t.id).reduce((n, l) => n + l.problems.length, 0) ? "Complete" : done ? `${done} of ${lessons.filter((l) => l.topic === t.id).reduce((n, l) => n + l.problems.length, 0)} solved` : "One step at a time"}</small></div></div>`;
+      const { complete, quizRemaining, solved, total } = moduleProgress(t);
+      const status = complete
+        ? "Complete"
+        : quizRemaining
+          ? "Quiz remaining"
+          : solved
+            ? `${solved} of ${total} solved`
+            : "One step at a time";
+      return `<div class="path-item" data-module="${t.id}"><span class="path-node ${complete ? "done" : i === 0 ? "current" : ""}">${complete ? "?" : String(i + 1).padStart(2, "0")}</span><div><strong>${t.short}</strong><small>${status}</small></div></div>`;
     })
     .join(
       "",
     )}</div></div><div class="lab-teaser"><span class="teaser-icon">${icon("lab")}</span><h3>Visual tools</h3><p>Number lines, signed counters, fraction bars, and a calculator.</p>${button("Explore the visual lab " + icon("arrow"), "view:lab", "text-button")}</div></aside></div>${comingSoon()}<footer><span class="footer-brand">numi.</span><span>Built for curious minds. At every starting point.</span><span>${icon("check")} Your pace. Your progress.</span></footer>`;
 }
 function topicCard(t) {
-  const ls = lessons.filter((l) => l.topic === t.id),
-    done = ls.reduce((s, l) => s + getProgress(l.id).solved.length, 0);
+  const {
+    moduleLessons: ls,
+    solved,
+    total,
+    complete,
+    quizRemaining,
+    quizPassed,
+  } = moduleProgress(t);
+  const status = complete
+    ? "Module complete"
+    : quizRemaining
+      ? "Quiz remaining"
+      : `${solved}/${total} solved`;
   const expanded = expandedTopics.has(t.id),
     visible = expanded ? ls : ls.slice(0, 3);
   return `<article class="topic-card ${t.color}"><div class="topic-top"><span class="topic-icon">${icon(t.icon)}</span><span class="topic-tag">${t.tag}</span></div><h3>${t.title}</h3><p>${t.description}</p><div class="lesson-links" id="lessons-${t.id}" data-expanded="${expanded}">${visible
@@ -263,7 +309,7 @@ function topicCard(t) {
     })
     .join(
       "",
-    )}</div>${ls.length > 3 ? button((expanded ? "Show fewer lessons" : `Show all ${ls.length} lessons`) + icon("chevron"), `toggle-topic:${t.id}`, "text-button lesson-list-toggle", `aria-expanded="${expanded}" aria-controls="lessons-${t.id}"`) : ""}${activityLinks(t.id, state.activityScores)}<div class="card-bottom"><span>${ls.length} guided lessons</span><span>${done ? `${done}/${ls.reduce((n, l) => n + l.problems.length, 0)} solved` : "Beginner friendly"} ${done ? icon("check") : icon("leaf")}</span></div></article>`;
+    )}${ls.length > 3 ? button((expanded ? "Show fewer lessons" : `Show all ${ls.length} lessons`) + icon("chevron"), `toggle-topic:${t.id}`, "text-button lesson-list-toggle", `aria-expanded="${expanded}" aria-controls="lessons-${t.id}"`) : ""}${t.quizPassKey ? quizLessonLink(quizPassed) : ""}</div>${activityLinks(t.id, state.activityScores)}<div class="card-bottom"><span>${ls.length} guided lessons${t.quizPassKey ? " + quiz" : ""}</span><span>${status} ${complete ? icon("check") : icon("leaf")}</span></div></article>`;
 }
 function comingSoon() {
   return `<section class="coming-soon"><div class="section-heading"><div><span class="eyebrow muted">GROW FROM HERE</span><h2>More to look forward to</h2><p>A strong foundation opens up a whole new world.</p></div><span class="badge">${icon("lock")} To be added</span></div><div class="future-grid">${upcoming.map((group, i) => `<article class="future-card"><div class="future-number">0${i + 2}</div><div><h3>${group.title}</h3><p>${i ? "From your first variable to the coordinate plane." : "Connect everyday questions to everyday math."}</p><details><summary>See ${group.items.length} upcoming topics ${icon("chevron")}</summary><ul>${group.items.map(([name, desc]) => `<li><strong>${name}</strong><span>${desc}</span></li>`).join("")}</ul></details></div></article>`).join("")}</div></section>`;
@@ -395,7 +441,7 @@ function lessonView() {
 function progressView() {
   const solved = solvedCount(),
     complete = completedCount();
-  return `<div class="page-heading"><span class="eyebrow muted">LOOK HOW FAR YOU’VE COME</span><h1>Progress, one step at a time<span class="purple-text">.</span></h1><p>There’s no deadline for understanding. Keep building at your own pace.</p></div><div class="stats-grid"><div><span class="stat-icon">${icon("check")}</span><b>${solved}<small> / ${totalProblems}</small></b><span>Problems solved</span></div><div><span class="stat-icon">${icon("book")}</span><b>${complete}<small> / ${lessons.length}</small></b><span>Lessons completed</span></div><div><span class="stat-icon">${icon("leaf")}</span><b>${Math.round((solved / totalProblems) * 100)}<small>%</small></b><span>Foundation explored</span></div></div><div class="progress-lessons">${lessons
+  return `<div class="page-heading"><span class="eyebrow muted">LOOK HOW FAR YOU’VE COME</span><h1>Progress, one step at a time<span class="purple-text">.</span></h1><p>There’s no deadline for understanding. Keep building at your own pace.</p></div><div class="stats-grid"><div><span class="stat-icon">${icon("check")}</span><b>${solved}<small> / ${totalProblems}</small></b><span>Problems solved</span></div><div><span class="stat-icon">${icon("book")}</span><b>${complete}<small> / ${lessons.length}</small></b><span>Lessons completed</span></div><div><span class="stat-icon">${icon("leaf")}</span><b>${completedModuleCount()}<small> / ${topics.length}</small></b><span>Modules completed</span></div></div><div class="progress-lessons">${lessons
     .map((l) => {
       const p = getProgress(l.id),
         t = topics.find((t) => t.id === l.topic);
@@ -420,8 +466,8 @@ function achievementsView() {
     ],
     [
       "A flourishing foundation",
-      count === totalProblems,
-      `All ${totalProblems} problems solved`,
+      completedModuleCount() === topics.length,
+      "All modules completed",
     ],
   ];
   return `<section class="achievements"><div class="section-heading"><div><span class="eyebrow muted">YOUR EFFORT IS ADDING UP</span><h2>A little garden of wins</h2></div><span class="points-badge">${icon("leaf")} ${count * 10} leaf points</span></div><p>Earn 10 leaf points for each new problem solved. Revisit any problem freely; points are awarded once.</p><div class="achievement-grid">${badges.map(([name, earned, description]) => `<div class="achievement ${earned ? "earned" : ""}">${icon(earned ? "leaf" : "lock")}<strong>${name}</strong><span>${description}</span><small>${earned ? "Earned" : "Still growing"}</small></div>`).join("")}</div></section>`;
@@ -572,20 +618,20 @@ function calculatorTool() {
 function render() {
   applyAppearance(appearance);
   const activity = state.activity;
-  const signedLessons =
-    activity?.mode === "quiz-setup"
-      ? lessons.filter((lesson) => lesson.topic === "integers")
-      : [];
-  const completed = signedLessons.filter(
-    (lesson) => getProgress(lesson.id).solved.length === lesson.problems.length,
-  ).length;
+  const topic = topics.find((topic) => topic.id === activity?.topic);
+  const quizModule =
+    activity?.mode === "quiz-setup" ? moduleProgress(topic) : null;
   const content =
     activity?.mode === "quiz-setup"
-      ? quizSetup(completed, signedLessons.length, state.activityScores)
+      ? quizSetup(
+          quizModule.completedLessons,
+          quizModule.moduleLessons.length,
+          state.activityScores,
+        )
       : activityQuestion(activity)
         ? activityView(
             activity,
-            topics.find((topic) => topic.id === activity.topic)?.title,
+            topic?.title,
             state.activityScores,
             practiceMath,
           )
