@@ -7,6 +7,7 @@ import {
 } from "./math.js";
 import { migrateLessonProgress } from "./progress-migration.js";
 import { createAccountManager } from "./account.js";
+import { adminUid, createPracticeTracker } from "./practice-stats.js";
 import {
   activityIsOver,
   activityQuestion,
@@ -107,6 +108,14 @@ state.activityScores = normalizeActivityScores(state.activityScores);
 restoreFixedQuiz(state);
 let storageFailed = false;
 let accounts;
+let dashboard;
+const isAdmin = () => accounts?.user?.uid === adminUid;
+const activityVisible = () => !document.hidden && (document.hasFocus?.() ?? true);
+const tracker = createPracticeTracker({
+  storage: localStorage,
+  write: (entry) => accounts.writePracticeActivity(entry),
+  visible: activityVisible,
+});
 function save() {
   try {
     if (accounts) accounts.save(state);
@@ -243,6 +252,7 @@ function header() {
     ["lab", "Visual lab", "lab"],
     ["progress", "My progress", "chart"],
     ["settings", "Settings", "settings"],
+    ...(isAdmin() ? [["admin", "Admin", "chart"]] : []),
   ]
     .map(([id, name, i]) =>
       button(
@@ -479,7 +489,7 @@ function settingsView() {
     ["ocean", "Ocean", "Clear blue & sea foam"],
     ["warm", "Warm clay", "Terracotta & soft sand"],
   ];
-  return `<div class="page-heading"><h1>Settings</h1></div><div class="settings-layout"><section class="settings-card">${accounts?.view() || ""}<h2>Appearance</h2><p>Changes apply straight away and are saved in this browser.</p><fieldset class="theme-options"><legend>Color theme</legend>${themes.map(([id, title, description]) => `<label class="theme-option ${appearance.theme === id ? "selected" : ""}"><input type="radio" name="color-theme" value="${id}" data-setting="theme" ${appearance.theme === id ? "checked" : ""}><span class="theme-swatch ${id}" aria-hidden="true"></span><span><strong>${title}</strong><small>${description}</small></span></label>`).join("")}</fieldset><div class="settings-fields"><label><span>Text size</span><select data-setting="size" aria-label="Text size">${[
+  return `<div class="page-heading"><h1>Settings</h1></div><div class="settings-layout"><section class="settings-card">${accounts?.view() || ""}<p>When signed in, Numi records active days, estimated practice time, answer counts, and quiz and review timing for the app owner.</p><h2>Appearance</h2><p>Changes apply straight away and are saved in this browser.</p><fieldset class="theme-options"><legend>Color theme</legend>${themes.map(([id, title, description]) => `<label class="theme-option ${appearance.theme === id ? "selected" : ""}"><input type="radio" name="color-theme" value="${id}" data-setting="theme" ${appearance.theme === id ? "checked" : ""}><span class="theme-swatch ${id}" aria-hidden="true"></span><span><strong>${title}</strong><small>${description}</small></span></label>`).join("")}</fieldset><div class="settings-fields"><label><span>Text size</span><select data-setting="size" aria-label="Text size">${[
     ["standard", "Standard"],
     ["comfortable", "Comfortable (default)"],
     ["large", "Extra large"],
@@ -622,7 +632,9 @@ function render() {
   const quizModule =
     activity?.mode === "quiz-setup" ? moduleProgress(topic) : null;
   const content =
-    activity?.mode === "quiz-setup"
+    state.view === "admin" && isAdmin()
+      ? dashboard?.view() || '<div class="admin-dashboard"><h1>Activity dashboard</h1><p role="status">Loading dashboard…</p></div>'
+      : activity?.mode === "quiz-setup"
       ? quizSetup(
           quizModule.completedLessons,
           quizModule.moduleLessons.length,
@@ -718,6 +730,9 @@ function closeTools() {
 }
 
 function go(view) {
+  if (view === "admin" && !isAdmin()) return;
+  if (view === "admin" || state.view === "admin") tracker.clock?.stopSession();
+  tracker.clock?.leaveActivity();
   delete state.activity;
   if (view !== "settings") {
     deleteProgressPending = false;
@@ -728,6 +743,31 @@ function go(view) {
   render();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+
+async function showAdmin() {
+  if (!isAdmin()) return;
+  if (overlay) closeTools();
+  go("admin");
+  tracker.flush();
+  try {
+    const { createAdminDashboard } = await import("./admin-dashboard.js");
+    if (!isAdmin() || state.view !== "admin") return;
+    dashboard ||= createAdminDashboard({
+      read: (from, until) => accounts.readPracticeActivity(from, until),
+      redraw: (focus) => {
+        if (!isAdmin() || state.view !== "admin") return;
+        render();
+        if (focus) document.querySelector(focus)?.focus();
+      },
+    });
+    dashboard.load();
+  } catch {
+    if (isAdmin() && state.view === "admin") {
+      go("lessons");
+      toast("Couldn’t open the dashboard. Reload the page and try again.");
+    }
+  }
+}
 function quizLocked() {
   return (
     state.activity?.mode === "quiz" || state.activity?.mode === "quiz-setup"
@@ -736,6 +776,13 @@ function quizLocked() {
 
 function showActivity(run) {
   if (!run) return;
+  const clock = tracker.clock;
+  clock?.leaveActivity();
+  if (run.mode === "quiz" || run.mode === "review") {
+    clock?.interact();
+    if (run.mode === "quiz") clock?.startQuiz();
+    clock?.openQuestion();
+  }
   if (overlay) closeTools();
   state.view = "lessons";
   state.activity = run;
@@ -751,6 +798,11 @@ function showActivity(run) {
 function submitActivity(answer) {
   const update = checkActivity(state.activity, answer, state.activityScores);
   if (!update) return;
+  tracker.clock?.answer(update.run.mode, {
+    correct: update.run.result.correct,
+    topic: update.run.topic,
+    finished: activityIsOver(update.run),
+  });
   state.activity = update.run;
   state.activityScores = update.scores;
   render();
@@ -768,7 +820,7 @@ function handleActivityClick(action, value) {
   if (action === "activity-review")
     showActivity(startActivity("review", value));
   else if (action === "activity-warmup")
-    showActivity(startActivity("warmup", "integers"));
+    showActivity(startActivity("warmup", value || "integers"));
   else if (action === "activity-quiz")
     showActivity({ mode: "quiz-setup", topic: "integers" });
   else if (action === "activity-exit" && state.activity) {
@@ -776,13 +828,18 @@ function handleActivityClick(action, value) {
     state.lesson = null;
     go("lessons");
   } else if (action === "activity-next" && state.activity) {
-    state.activity = nextActivityQuestion(state.activity);
+    const next = nextActivityQuestion(state.activity);
+    if (next !== state.activity && (next.mode === "review" || next.mode === "quiz")) {
+      tracker.clock?.interact();
+      tracker.clock?.openQuestion();
+    }
+    state.activity = next;
     render();
     (
       document.querySelector("#activity-answer") ||
-      document.querySelector('[data-action^="activity-sign:"]')
+      document.querySelector('[data-action^="activity-sign:"], [data-action^="activity-choice:"]')
     )?.focus();
-  } else if (action === "activity-sign" && state.activity?.mode === "warmup")
+  } else if ((action === "activity-sign" || action === "activity-choice") && state.activity?.mode === "warmup")
     submitActivity(value);
   else return false;
   return true;
@@ -828,6 +885,7 @@ function checkCurrent() {
     input = document.querySelector("#answer").value;
   p.answers[p.index] = input;
   feedback = checkAnswer(input, l.problems[p.index]);
+  if (input.trim()) tracker.clock?.answer("lesson", { correct: feedback.correct, topic: l.topic });
   if (!feedback.correct && input.trim()) {
     p.failedChecks ||= {};
     // Two is enough to retain both unlock thresholds in local saves and exports.
@@ -867,6 +925,14 @@ document.addEventListener("click", (e) => {
   if (handleActivityClick(action, value)) return;
   if (quizLocked()) return;
   if (accounts?.handleClick(action, value)) return;
+  if (action === "view" && value === "admin") {
+    showAdmin();
+    return;
+  }
+  if (action.startsWith("admin-")) {
+    if (isAdmin() && state.view === "admin") dashboard?.click(action, value);
+    return;
+  }
   if (action.startsWith("line-") && !commitLineInputs()) return;
   if (el.tagName === "A") e.preventDefault();
   if (action === "open-account") {
@@ -1220,11 +1286,18 @@ accounts = createAccountManager({
     if (quizLocked() && overlay) closeTools();
     feedback = null;
     if (accountChanged) {
+      if (state.view === "admin") state.view = "lessons";
       deleteProgressPending = false;
       transferCode = transferDraft = transferStatus = "";
     }
   },
   render: renderKeepingAnswer,
+  onUserChanged: (user) => {
+    dashboard?.dispose();
+    dashboard = undefined;
+    tracker.setUser(user);
+  },
+  beforeSignOut: () => tracker.flush(),
   onStorageError: () => {
     storageFailed = true;
   },
@@ -1235,9 +1308,28 @@ if (
   window.location?.protocol === "http:"
 ) {
   accounts.start();
-  window.addEventListener("online", () => accounts.online());
+  for (const event of ["click", "input", "keydown"]) {
+    document.addEventListener(event, (e) => {
+      if (e.isTrusted && state.view !== "admin") tracker.clock?.interact();
+    }, true);
+  }
+  function pauseTracking() {
+    tracker.clock?.pause();
+    tracker.flush();
+  }
+  window.addEventListener("blur", pauseTracking);
+  window.addEventListener("focus", () => tracker.clock?.resume());
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) pauseTracking();
+    else tracker.clock?.resume();
+  });
+  window.addEventListener("online", () => {
+    accounts.online();
+    tracker.flush();
+  });
   window.addEventListener("offline", () => accounts.offline());
   window.addEventListener("pagehide", () => {
+    pauseTracking();
     accounts.flush()?.catch(() => {});
   });
 }

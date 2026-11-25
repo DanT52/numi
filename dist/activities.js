@@ -1,7 +1,10 @@
 import { lessons, topics } from "./lessons.js";
 import { calculate, checkAnswer } from "./math.js";
 import { signedQuizGroups, signedWarmup } from "./signed-activities.js";
+import { orderWarmup } from "./pemdas-warmup.js";
 import { mergeActivityScores, signedQuizGoal } from "./activity-scores.js";
+
+const warmupPools = { integers: signedWarmup, pemdas: orderWarmup };
 
 const quizGroups = Object.entries(signedQuizGroups).map(
   ([group, expressions]) =>
@@ -53,7 +56,7 @@ function reviewDeck(topic, last, random) {
 export function startActivity(mode, topic, random = Math.random) {
   if (
     !Object.hasOwn(reviewPools, topic) ||
-    (mode !== "review" && topic !== "integers")
+    (mode === "quiz" && topic !== "integers")
   )
     return null;
   let deck;
@@ -61,10 +64,7 @@ export function startActivity(mode, topic, random = Math.random) {
     deck = shuffledQuiz(random).map((problem) => quizPool.indexOf(problem));
   if (mode === "review") deck = reviewDeck(topic, undefined, random);
   if (mode === "warmup")
-    deck = shuffle(
-      signedWarmup.map((_, i) => i),
-      random,
-    );
+    deck = shuffle(warmupPools[topic]?.map((_, i) => i) || [], random);
   if (!deck?.length) return null;
   return {
     mode,
@@ -74,6 +74,9 @@ export function startActivity(mode, topic, random = Math.random) {
     streak: 0,
     correctCount: 0,
     result: null,
+    ...(mode === "warmup" && topic === "pemdas"
+      ? { choiceOrders: deck.map((index) => shuffle(orderWarmup[index].choices, random)) }
+      : {}),
   };
 }
 
@@ -105,7 +108,7 @@ export function activityQuestion(run) {
     run.mode === "quiz"
       ? quizPool
       : run.mode === "warmup"
-        ? signedWarmup
+        ? warmupPools[run.topic]
         : reviewPools[run.topic];
   return pool?.[run.deck?.[run.index]];
 }
@@ -121,14 +124,11 @@ export function activityIsOver(run) {
 export function checkActivity(run, answer, scores) {
   const question = activityQuestion(run);
   if (!question || run.result || !answer.trim()) return null;
-  if (
-    run.mode === "warmup" &&
-    !["positive", "negative", "zero", "undefined"].includes(answer)
-  )
+  if (run.mode === "warmup" && !(question.choices || ["positive", "negative", "zero", "undefined"]).includes(answer))
     return null;
   const correct =
     run.mode === "warmup"
-      ? answer === question.sign
+      ? answer === (question.first || question.sign)
       : (run.mode !== "quiz" || /^[+−-]?\d+$/.test(answer.trim())) &&
         checkAnswer(answer, question).correct;
   const next = {

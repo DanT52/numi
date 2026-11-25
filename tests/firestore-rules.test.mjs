@@ -8,11 +8,14 @@ import {
 } from "@firebase/rules-unit-testing";
 import {
   doc,
+  collection,
+  getDocs,
   setDoc,
   getDoc,
   deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
+import { adminUid, emptyStats } from "../dist/practice-stats.js";
 
 test("Firestore isolates accounts, validates saves, and protects reset epochs", async () => {
   assert.ok(
@@ -110,6 +113,32 @@ test("Firestore isolates accounts, validates saves, and protects reset epochs", 
     );
     await assertSucceeds(setDoc(alice, save(2, 6)));
     await assertFails(deleteDoc(alice));
+    const learnerDb = env.authenticatedContext("learner", { email: "learner@example.com" }).firestore();
+    const impersonatorDb = env.authenticatedContext("other-uid", { email: "dantramp52@gmail.com", admin: true }).firestore();
+    const adminDb = env.authenticatedContext(adminUid, { email: "dantramp52@gmail.com" }).firestore();
+    const guestDb = env.unauthenticatedContext().firestore();
+    const id = "learner_00112233-4455-6677-8899-aabbccddeeff";
+    const batch = {
+      ...emptyStats(), uid: "learner", email: "learner@example.com",
+      day: "2026-11-25", lastAt: Date.now(), lesson: 2, correct: 1, activeMs: 15_000,
+    };
+    const ledger = doc(learnerDb, "practiceActivity", id);
+    await assertFails(setDoc(ledger, { ...batch, email: "someone@example.com" }));
+    await assertFails(setDoc(ledger, { ...batch, correct: 3 }));
+    await assertFails(setDoc(ledger, { ...batch, answer: "never store raw answers" }));
+    await assertFails(setDoc(doc(impersonatorDb, "practiceActivity", id), batch));
+    await assertFails(setDoc(doc(guestDb, "practiceActivity", id), batch));
+    await assertSucceeds(setDoc(ledger, batch));
+    await assertSucceeds(setDoc(ledger, batch));
+    await assertFails(setDoc(ledger, { ...batch, activeMs: 0 }));
+    await assertFails(deleteDoc(ledger));
+    await assertFails(getDoc(ledger));
+    await assertFails(getDocs(collection(learnerDb, "practiceActivity")));
+    await assertFails(getDocs(collection(guestDb, "practiceActivity")));
+    await assertFails(getDocs(collection(impersonatorDb, "practiceActivity")));
+    const results = await assertSucceeds(getDocs(collection(adminDb, "practiceActivity")));
+    assert.deepEqual(results.docs.find((snapshot) => snapshot.id === id).data(), batch);
+    await assertFails(getDoc(doc(adminDb, "progress/alice")));
     await assertFails(
       setDoc(
         doc(env.authenticatedContext("alice").firestore(), "unrelated/example"),

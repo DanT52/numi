@@ -3,7 +3,7 @@ export default {
   topic: "pemdas",
   title: "Parentheses, powers & negative signs",
   subtitle: "Untangle expressions with signed numbers.",
-  minutes: 15,
+  minutes: 25,
   tool: "calculator",
   rule: "A negative sign outside a power is applied after the power: −3² = −9. Parentheses change the base: (−3)² = 9. Keep negative numbers in parentheses when multiplying them.",
   example: {
@@ -89,5 +89,15 @@ export default {
       prompt: "Find the answer.",
       type: "number",
     },
+    ...[
+      ["-4^2+7", "-9", "Square 4 before applying the leading minus.", "4² = 16. Apply the minus to get −16, then add 7 to get −9."],
+      ["(-4)^2-7", "9", "The parentheses include the minus in the base.", "(−4) × (−4) = 16. Then 16 − 7 = 9."],
+      ["-2^3+(-2)^2", "-4", "Evaluate both powers first.", "The first term is −8 and the second is 4. Then −8 + 4 = −4."],
+      ["16/(-4)*(-2)", "8", "Multiplication and division go left to right.", "16 ÷ (−4) = −4. Then (−4) × (−2) = 8."],
+      ["(-3)^2-2*(-5)", "19", "Evaluate the square and the product before subtracting.", "(−3)² = 9 and 2 × (−5) = −10. Then 9 − (−10) = 19."],
+      ["30/(2*(-3))+(-2)^2", "-1", "Find the denominator and the square first.", "2 × (−3) = −6 and (−2)² = 4. Then 30 ÷ (−6) = −5, and −5 + 4 = −1."],
+      ["-(5-8)^2+12/(-3)", "-13", "Square the value in parentheses before applying the outside minus.", "5 − 8 = −3. Its square is 9, so the first term is −9. Then 12 ÷ (−3) = −4 and −9 + (−4) = −13."],
+      ["(-2)^3-24/(-2*(1+3))", "-5", "Start with the innermost sum, then evaluate the denominator and power.", "1 + 3 = 4. The denominator is −8, so 24 ÷ (−8) = −3. Then −8 − (−3) = −5."],
+    ].map(([expr, answer, hint, solution]) => ({ expr, answer, hint, solution, prompt: "Find the answer.", type: "number" })),
   ],
 };

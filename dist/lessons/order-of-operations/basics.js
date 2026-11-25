@@ -3,7 +3,7 @@ export default {
   topic: "pemdas",
   title: "One expression, one step at a time",
   subtitle: "Learn which operation comes next.",
-  minutes: 12,
+  minutes: 20,
   tool: "calculator",
   rule: "Parentheses → Exponents → Multiplication and Division from left to right → Addition and Subtraction from left to right. Multiplication and division share a priority; so do addition and subtraction.",
   example: {
@@ -93,5 +93,15 @@ export default {
       prompt: "Find the answer.",
       type: "number",
     },
+    ...[
+      ["14-2*5", "4", "Multiply before subtracting.", "2 × 5 = 10. Then 14 − 10 = 4."],
+      ["(14-2)*5", "60", "Subtract inside the parentheses first.", "14 − 2 = 12. Then 12 × 5 = 60."],
+      ["3*12/4", "9", "Work left to right for multiplication and division.", "3 × 12 = 36. Then 36 ÷ 4 = 9."],
+      ["36/6/2", "3", "When you see two divisions, start on the left.", "36 ÷ 6 = 6. Then 6 ÷ 2 = 3."],
+      ["18-7-4+2", "9", "Addition and subtraction go left to right.", "18 − 7 = 11. Then 11 − 4 = 7 and 7 + 2 = 9."],
+      ["2*(3+(5-2))", "12", "Start inside the innermost parentheses.", "5 − 2 = 3. Then 3 + 3 = 6 and 2 × 6 = 12."],
+      ["9+24/(3*2)-2^2", "9", "Work out the parentheses and power before the final addition and subtraction.", "3 × 2 = 6, 2² = 4, and 24 ÷ 6 = 4. Then 9 + 4 − 4 = 9."],
+      ["(8-5)^2+2*7-4", "19", "Simplify the parentheses, square the result, then multiply.", "8 − 5 = 3. Then 3² = 9 and 2 × 7 = 14. Finish with 9 + 14 − 4 = 19."],
+    ].map(([expr, answer, hint, solution]) => ({ expr, answer, hint, solution, prompt: "Find the answer.", type: "number" })),
   ],
 };

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parseHTML } from "linkedom";
-import { lessons } from "../dist/lessons.js";
+import { lessons, totalProblems } from "../dist/lessons.js";
 import { legacyThreeNumberExpressions } from "../dist/lessons/signed-numbers/legacy-three-number-questions.js";
 import { calculate } from "../dist/math.js";
 import { activityQuestion } from "../dist/activities.js";
@@ -75,6 +75,33 @@ function submit(id) {
     );
 }
 const persisted = () => JSON.parse(stored.get("numi.progress.v1"));
+
+test("PEMDAS warmup offers shuffled choices and explains a wrong first step", async () => {
+  stored.clear();
+  mount();
+  await import("../dist/app.js?pemdas-warmup");
+  assert.equal(document.querySelector('[data-action="view:admin"]'), null);
+  const attemptedAdminLink = document.createElement("button");
+  attemptedAdminLink.dataset.action = "view:admin";
+  document.body.append(attemptedAdminLink);
+  click("view:admin");
+  assert.equal(document.querySelector(".admin-dashboard"), null);
+
+  click("activity-warmup:pemdas");
+  const { activity } = persisted();
+  const first = activityQuestion(activity);
+  assert.equal(activity.topic, "pemdas");
+  assert.equal(new Set(activity.deck).size, 14);
+  assert.match(document.querySelector("#activity-title").textContent, /Order of operations warmup/);
+  assert.equal(document.querySelector(".activity-count"), null);
+  assert.equal(document.querySelectorAll('[aria-label="Operation choices"] button').length, first.choices.length);
+  click(`activity-choice:${first.choices.find((choice) => choice !== first.first)}`);
+  assert.match(document.querySelector(".activity-feedback").textContent, /Not quite/);
+  assert.ok(document.querySelector(".activity-feedback").textContent.includes(first.explanation));
+  click("activity-next");
+  click(`activity-choice:${activityQuestion(persisted().activity).first}`);
+  assert.match(document.querySelector(".activity-feedback").textContent, /Correct!/);
+});
 
 test("quiz locks tools, records only one answer per question, and saves a pass", async () => {
   stored.clear();
@@ -531,7 +558,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
         document.querySelector('[data-module="fractions"] .path-node.done'),
       );
       click("view:progress");
-      assert.match(document.querySelector(".stats-grid").textContent, /248/);
+      assert.match(document.querySelector(".stats-grid").textContent, new RegExp(String(totalProblems)));
       assert.match(
         document.querySelector(".stats-grid").textContent,
         /3\s*\/ 4Modules completed/,

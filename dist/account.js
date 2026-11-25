@@ -26,6 +26,8 @@ export function createAccountManager({
   storage = localStorage,
   clientFactory = createFirebaseClient,
   onStorageError = () => {},
+  onUserChanged = () => {},
+  beforeSignOut = () => {},
 }) {
   let api,
     user = null,
@@ -160,6 +162,7 @@ export function createAccountManager({
     user = nextUser
       ? { uid: nextUser.uid, email: nextUser.email || "Your account" }
       : null;
+    onUserChanged(user);
     key = user ? `numi.progress.user.${user.uid}.v1` : GUEST;
     ready = true;
     starting = false;
@@ -280,6 +283,7 @@ export function createAccountManager({
     message = "";
     refreshAccount();
     try {
+      beforeSignOut();
       persist();
       if (typeof navigator === "undefined" || navigator.onLine !== false) {
         let timeout;
@@ -313,6 +317,8 @@ export function createAccountManager({
     get user() {
       return user;
     },
+    writePracticeActivity: (entry) => api.writePracticeActivity(entry),
+    readPracticeActivity: (from, until) => api.readPracticeActivity(from, until),
     get storageKey() {
       return key;
     },

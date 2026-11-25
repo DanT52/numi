@@ -53,6 +53,26 @@ account files outside this checkout.
   in Firebase Authentication if you want custom branding.
 - Appearance preferences remain local to each device.
 
+## Activity dashboard
+
+The Admin tab uses the same Firebase sign-in as Numi. The allowed Firebase UID
+is configured in `dist/practice-stats.js` and `firestore.rules`. Change both if
+you transfer dashboard access. Only that UID can read `practiceActivity`. The
+existing `progress` collection remains readable by each account owner.
+
+Numi collects signed-in activity and queues immutable batches in browser storage
+until Firestore acknowledges them. Each batch identifies the account and Pacific
+date and contains counters and timing totals. Answer text and keystrokes are
+excluded. The dashboard reads one month at a time.
+
+Practice time is committed through the last submitted answer in an active
+interval. The clock pauses when the tab loses focus and starts a new interval
+after five minutes without interaction. Quiz and signed-number review per-answer
+averages use observed question timings. An interrupted or restored quiz can still
+contribute its final result even when a full run timing is unavailable. Activity
+starts accumulating with this release. The existing Delete all progress control
+clears lesson progress and scores independently of aggregate activity history.
+
 ## Saving and conflicts
 
 Guest work retains the original `numi.progress.v1` localStorage key. Each account

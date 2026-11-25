@@ -1,4 +1,5 @@
 import { cloudDocument, emptyCloudProgress } from "./cloud-progress.js";
+import { adminUid } from "./practice-stats.js";
 
 // Firebase's browser configuration is public. Authorization lives in firestore.rules.
 export const firebaseConfig = {
@@ -46,6 +47,20 @@ export function createFirebaseAdapter(appSDK, authSDK, dbSDK) {
     },
     resetPassword: (email) => authSDK.sendPasswordResetEmail(auth, email),
     signOut: () => authSDK.signOut(auth),
+    writePracticeActivity({ id, ...entry }) {
+      if (auth.currentUser?.uid !== entry.uid) return Promise.reject(new Error("Account changed"));
+      return dbSDK.setDoc(dbSDK.doc(db, "practiceActivity", id), entry);
+    },
+    async readPracticeActivity(from, until) {
+      if (auth.currentUser?.uid !== adminUid) throw new Error("Admin access required");
+      const days = dbSDK.query(
+        dbSDK.collection(db, "practiceActivity"),
+        dbSDK.where("day", ">=", from),
+        dbSDK.where("day", "<", until),
+      );
+      const snapshot = await dbSDK.getDocsFromServer(days);
+      return snapshot.docs.map((doc) => doc.data());
+    },
     progress(uid) {
       const ref = dbSDK.doc(db, "progress", uid);
       return {

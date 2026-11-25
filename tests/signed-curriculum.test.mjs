@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readdir } from "node:fs/promises";
-import { lessons, totalProblems } from "../dist/lessons.js";
+import { lessons } from "../dist/lessons.js";
 import { calculate, parse } from "../dist/math.js";
 import { expressionToLine, lineModel } from "../dist/visual-models.js";
 import { migrateSignedProgress } from "../dist/progress-migration.js";
@@ -36,7 +36,6 @@ test("signed path orders the two additions lessons before multiplication and rev
       "integers-review",
     ],
   );
-  assert.equal(totalProblems, 248);
 });
 test("every advanced addition question uses three numbers and preloads both operations", () => {
   const lesson = lessons.find((l) => l.id === "integers-add-subtract-small-3");

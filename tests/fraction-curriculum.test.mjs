@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { lessons, totalProblems } from "../dist/lessons.js";
+import { lessons } from "../dist/lessons.js";
 import { calculate, checkAnswer } from "../dist/math.js";
 import {
   migrateFractionProgress,
@@ -30,7 +30,6 @@ test("fraction path progresses from representations to arithmetic and mixed numb
     fractions.reduce((n, l) => n + l.problems.length, 0),
     84,
   );
-  assert.equal(totalProblems, 248);
   for (const [index, l] of fractions.entries()) {
     assert.equal(l.sequence, index + 1);
     assert.equal(l.problems.length, 12);

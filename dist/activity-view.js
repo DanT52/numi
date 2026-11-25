@@ -10,10 +10,9 @@ const button = (text, action, primary = false) =>
 
 export function activityLinks(topic, scores = {}) {
   const review = scores[topic] ? `Review · Best ${scores[topic]}` : "Review";
-  const signed = topic === "integers";
   return `<div class="module-activities" aria-label="Module activities">
     ${button(review, `activity-review:${topic}`)}
-    ${signed ? button("Warmup", "activity-warmup") : ""}
+    ${topic === "integers" ? button("Warmup", "activity-warmup") : topic === "pemdas" ? button("Warmup", "activity-warmup:pemdas") : ""}
   </div>`;
 }
 
@@ -63,22 +62,24 @@ export function activityView(run, title, scores, renderMath) {
   const question = activityQuestion(run);
   const quiz = run.mode === "quiz",
     warmup = run.mode === "warmup";
+  const orderWarmup = warmup && !!question.choices;
   const over = activityIsOver(run);
   const passed = quiz && over && run.result.correct;
   const heading = quiz
     ? "Signed numbers quiz"
     : warmup
-      ? "Signed numbers warmup"
+      ? `${orderWarmup ? "Order of operations" : "Signed numbers"} warmup`
       : `${title} review`;
   const resultHeading = quiz
     ? passed
       ? "Quiz passed!"
       : "Quiz ended"
     : "Warmup complete";
-  const answerMath =
-    question.answer === null ? "undefined" : math(question.answer);
+  const operationMath = (expr) => math(expr, { inlineDivision: true });
+  const answerMath = orderWarmup ? operationMath(question.first)
+    : question.answer === null ? "undefined" : math(question.answer);
   const correctAnswer = warmup
-    ? `${question.sign}${question.answer === null ? "" : ` (${answerMath})`}`
+    ? orderWarmup ? answerMath : `${question.sign}${question.answer === null ? "" : ` (${answerMath})`}`
     : `${answerMath}${question.type === "percent" ? "%" : ""}`;
   const explanation = question.explanation || question.solution;
   const feedback = run.result
@@ -91,9 +92,9 @@ export function activityView(run, title, scores, renderMath) {
               : passed
                 ? `<p>You answered ${run.streak} questions correctly in a row.</p>`
                 : `<p>You got ${run.correctCount} in a row. The correct answer was ${correctAnswer}.</p>`
-            : `<p>${warmup || !run.result.correct ? `Answer: ${correctAnswer}. ` : ""}${explanation ? esc(explanation) : ""}</p>`
+            : orderWarmup && run.result.correct ? "" : `<p>${warmup || !run.result.correct ? `Answer: ${correctAnswer}. ` : ""}${explanation ? esc(explanation) : ""}</p>`
         }
-        ${warmup && over ? `<p>You got ${run.correctCount} of ${run.deck.length} rules right.</p>` : ""}
+        ${warmup && over ? `<p>You got ${run.correctCount} of ${run.deck.length} ${orderWarmup ? "questions" : "rules"} right.</p>` : ""}
       </div>`
     : "";
   const summary = quiz
@@ -108,15 +109,18 @@ export function activityView(run, title, scores, renderMath) {
     ${
       quiz
         ? `<p class="activity-note">Question ${run.index + 1} of ${run.deck.length} · One try · Tools off</p>`
-        : `<p class="activity-note">${esc(question.group)}</p>`
+        : orderWarmup ? "" : `<p class="activity-note">${esc(question.group)}</p>`
     }
-    <p>${warmup ? "What sign is the result?" : esc(question.prompt || "Find the integer result.")}</p>
-    <div class="practice-equation activity-equation">${renderMath(question)}</div>
+    <p>${esc(question.prompt || (warmup ? "What sign is the result?" : "Find the integer result."))}</p>
+    <div class="practice-equation activity-equation">${orderWarmup ? operationMath(question.expr) : renderMath(question)}</div>
     ${
       run.result
         ? ""
         : warmup
-          ? `<div class="activity-actions" role="group" aria-label="Result choices">
+          ? orderWarmup ? `<div class="activity-actions" role="group" aria-label="Operation choices">
+      ${(run.choiceOrders?.[run.index] || question.choices)
+        .map((choice) => button(operationMath(choice), `activity-choice:${esc(choice)}`)).join("")}</div>`
+          : `<div class="activity-actions" role="group" aria-label="Result choices">
       ${["positive", "negative", "zero", "undefined"]
         .map((sign) =>
           button(
@@ -138,7 +142,7 @@ export function activityView(run, title, scores, renderMath) {
     ${feedback}
     <div class="activity-actions">
       ${run.result && !over ? button("Next question", "activity-next", true) : ""}
-      ${over ? button(quiz ? "Try a new quiz" : "Restart warmup", quiz ? "activity-quiz" : "activity-warmup", true) : ""}
+      ${over ? button(quiz ? "Try a new quiz" : "Restart warmup", quiz ? "activity-quiz" : orderWarmup ? "activity-warmup:pemdas" : "activity-warmup", true) : ""}
       ${button(over ? "Back to lessons" : quiz ? "End quiz" : warmup ? "End warmup" : "End review", "activity-exit")}
     </div>
   </section>`;

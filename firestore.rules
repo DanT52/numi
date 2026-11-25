@@ -2,6 +2,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function owner(uid) { return request.auth != null && request.auth.uid == uid; }
+    function activityAdmin() {
+      return owner('sUf2WIFGJfRXg5ZmlZEwy2nxMoG3');
+    }
+    function validActivityBatch(id) {
+      let s = request.resource.data;
+      let count = s.lesson + s.quiz + s.review + s.warmup;
+      return owner(s.uid)
+        && id.matches(s.uid + '_[a-f0-9-]{36}')
+        && s.keys().size() == 18
+        && s.keys().hasOnly(['uid', 'email', 'day', 'lastAt', 'activeMs', 'lesson', 'quiz', 'review', 'warmup',
+          'correct', 'timedQuiz', 'quizMs', 'timedSignedReview', 'signedReviewMs', 'quizRuns', 'quizPasses',
+          'timedPasses', 'passedQuizMs'])
+        && s.email == request.auth.token.email && s.email is string && s.email.size() <= 254
+        && s.day is string && s.day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && s.lastAt is int && s.lastAt > 0 && s.lastAt <= request.time.toMillis() + 300000
+        && validScore(s, 'activeMs', 90000000)
+        && validScore(s, 'lesson', 10000) && validScore(s, 'quiz', 10000)
+        && validScore(s, 'review', 10000) && validScore(s, 'warmup', 10000)
+        && validScore(s, 'correct', count)
+        && validScore(s, 'timedQuiz', s.quiz) && validScore(s, 'quizMs', 90000000)
+        && validScore(s, 'timedSignedReview', s.review) && validScore(s, 'signedReviewMs', 90000000)
+        && validScore(s, 'quizRuns', s.quiz) && validScore(s, 'quizPasses', s.quizRuns)
+        && validScore(s, 'timedPasses', s.quizPasses) && validScore(s, 'passedQuizMs', 90000000);
+    }
     function score(scores, key) { return scores.get(key, 0); }
     function validScore(scores, key, maxValue) {
       return score(scores, key) is int && score(scores, key) >= 0 && score(scores, key) <= maxValue;
@@ -46,6 +70,12 @@ service cloud.firestore {
       let d = request.resource.data.data;
       return d.progress.size() == 0 && d.lesson == null && d.game.best == 0 && d.game.streak == 0
         && d.get('activityScores', {}).size() == 0;
+    }
+    match /practiceActivity/{id} {
+      allow read: if activityAdmin();
+      allow create: if validActivityBatch(id);
+      // Repeat offline uploads leave the original batch unchanged.
+      allow update: if owner(resource.data.uid) && request.resource.data == resource.data;
     }
     match /progress/{uid} {
       allow read: if owner(uid);

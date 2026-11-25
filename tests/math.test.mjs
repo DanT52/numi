@@ -102,7 +102,9 @@ test("expanded curriculum has complete lessons and valid problems", () => {
             ? 24
             : lesson.topic === "fractions"
               ? 12
-              : 8,
+              : lesson.topic === "pemdas"
+                ? 16
+                : 8,
     );
     assert.ok(lesson.example.steps.length >= 3);
     assert.ok(lesson.rule);

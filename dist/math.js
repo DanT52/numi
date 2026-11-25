@@ -99,7 +99,7 @@ export function escapeHTML(s) {
       ],
   );
 }
-export function math(input) {
+export function math(input, { inlineDivision = false } = {}) {
   const render = (n) => {
     if (n.op === "number") return `<mn>${escapeHTML(n.raw)}</mn>`;
     if (n.op === "mixed")
@@ -109,7 +109,9 @@ export function math(input) {
     if (n.op.startsWith("unary"))
       return `<mrow><mo>${n.op === "unary-" ? "−" : "+"}</mo>${render(n.right)}</mrow>`;
     if (n.op === "/")
-      return `<mfrac>${render(n.left)}${render(n.right)}</mfrac>`;
+      return inlineDivision
+        ? `<mrow>${render(n.left)}<mo>÷</mo>${render(n.right)}</mrow>`
+        : `<mfrac>${render(n.left)}${render(n.right)}</mfrac>`;
     if (n.op === "^") return `<msup>${render(n.left)}${render(n.right)}</msup>`;
     if (n.op === "%") return `<mrow>${render(n.left)}<mo>%</mo></mrow>`;
     return `<mrow>${render(n.left)}<mo>${{ "+": "+", "-": "−", "*": "×" }[n.op]}</mo>${render(n.right)}</mrow>`;
