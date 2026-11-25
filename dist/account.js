@@ -321,6 +321,7 @@ export function createAccountManager({
     },
     writePracticeActivity: (entry) => api.writePracticeActivity(entry),
     readPracticeActivity: (from, until) => api.readPracticeActivity(from, until),
+    readPracticeSummaries: () => api.readPracticeSummaries(),
     writePresence: (id, entry) => api.writePresence(id, entry),
     removePresence: (id, uid) => api.removePresence(id, uid),
     watchPresence: (callback) => api.watchPresence(callback),

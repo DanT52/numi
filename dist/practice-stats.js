@@ -13,11 +13,13 @@ export const statFields = [
   "activeMs", "lesson", "quiz", "review", "warmup", "correct",
   "timedQuiz", "quizMs", "timedSignedReview", "signedReviewMs",
   "quizRuns", "quizPasses", "timedPasses", "passedQuizMs",
+  "timedReview", "reviewMs", "excludedReview", "timedFilteredSignedReview", "filteredSignedReviewMs",
 ];
 export const emptyStats = () => Object.fromEntries(statFields.map((field) => [field, 0]));
 export const attempts = (stats) => stats.lesson + stats.quiz + stats.review + stats.warmup;
 
 const IDLE_MS = 5 * 60 * 1000;
+export const reviewTimingLimit = 2 * 60 * 1000;
 
 export function createPracticeClock({ record, now = Date.now, visible }) {
   let last = null;
@@ -101,9 +103,16 @@ export function createPracticeClock({ record, now = Date.now, visible }) {
         stats.timedQuiz = 1;
         stats.quizMs = questionMs;
       }
-      if (mode === "review" && topic === "integers" && questionMs !== null) {
-        stats.timedSignedReview = 1;
-        stats.signedReviewMs = questionMs;
+      if (mode === "review" && questionMs !== null) {
+        if (questionMs > reviewTimingLimit) stats.excludedReview = 1;
+        else {
+          stats.timedReview = 1;
+          stats.reviewMs = questionMs;
+          if (topic === "integers") {
+            stats.timedFilteredSignedReview = 1;
+            stats.filteredSignedReviewMs = questionMs;
+          }
+        }
       }
       if (mode === "quiz" && finished) {
         stats.quizRuns = 1;

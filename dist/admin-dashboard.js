@@ -1,6 +1,7 @@
 import { escapeHTML as esc } from "./math.js";
-import { activityDay, activityZone, attempts, emptyStats, statFields } from "./practice-stats.js";
+import { activityDay, activityZone, attempts, emptyStats, reviewTimingLimit, statFields } from "./practice-stats.js";
 import { onlineLearners } from "./practice-presence.js";
+import { lessons, topics } from "./lessons.js";
 
 const monthFormat = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 const dayFormat = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
@@ -29,15 +30,17 @@ function duration(ms) {
 const average = (ms, samples) => samples ? duration(ms / samples) : "—";
 
 function addStats(target, source) {
-  for (const field of statFields) target[field] += source[field];
+  for (const field of statFields) target[field] += source[field] ?? 0;
 }
 
-export function summarizeActivity(records) {
+const emptyLearner = (uid) => ({ uid, days: new Map(), lastAt: 0, ...emptyStats() });
+
+export function summarizeActivity(records, summaries = []) {
   const learners = new Map();
   for (const record of records) {
     let learner = learners.get(record.uid);
     if (!learner) {
-      learner = { uid: record.uid, days: new Map(), lastAt: 0, ...emptyStats() };
+      learner = emptyLearner(record.uid);
       learners.set(record.uid, learner);
     }
     if (record.lastAt >= learner.lastAt) {
@@ -48,6 +51,12 @@ export function summarizeActivity(records) {
     addStats(learner.days.get(record.day), record);
     addStats(learner, record);
   }
+  for (const summary of summaries) {
+    const learner = learners.get(summary.uid) ?? emptyLearner(summary.uid);
+    learner.email = summary.email;
+    learner.summary = summary;
+    learners.set(summary.uid, learner);
+  }
   return [...learners.values()].sort((a, b) => b.lastAt - a.lastAt || a.email.localeCompare(b.email));
 }
 
@@ -56,6 +65,26 @@ const control = (label, action, disabled = false) =>
 
 const metric = (label, value, detail = "") =>
   `<div class="admin-metric"><span>${label}</span><strong>${value}</strong>${detail ? `<small>${detail}</small>` : ""}</div>`;
+
+function bestStreak(summary) {
+  return summary ? Math.max(0, ...Object.values(summary.reviewBest)) : null;
+}
+
+function learnerOverview(learner, summaryUnavailable) {
+  const summary = learner.summary;
+  const streak = bestStreak(summary);
+  const topTopics = streak ? topics.filter(({ id }) => summary.reviewBest[id] === streak).map(({ title }) => title).join(", ") : "All topics";
+  const completionDetail = summary ? "Current saved progress" : summaryUnavailable ? "Progress unavailable" : "Waiting for the learner to sync";
+  return `<section class="admin-card" aria-labelledby="admin-learner-stats">
+    <h2 id="admin-learner-stats">Learner stats</h2><p class="admin-account">${esc(learner.email)}</p>
+    <div class="admin-overview admin-learner-overview">
+      ${metric("Lessons completed", summary ? `${count(summary.completedLessons)} / ${lessons.length}` : "—", completionDetail)}
+      ${metric("Best review streak", streak === null ? "—" : count(streak), `All-time · ${esc(topTopics)}`)}
+      ${metric("Avg. time per review answer", average(learner.reviewMs, learner.timedReview), `Selected month · ${plural(learner.timedReview, "timed answer")}${learner.excludedReview ? ` · ${count(learner.excludedReview)} excluded` : ""}`)}
+    </div>
+    <p class="admin-muted">Review averages exclude answers that took more than ${reviewTimingLimit / 60_000} active minutes.</p>
+  </section>`;
+}
 
 function calendar(month, learner, selectedDay) {
   const first = monthDate(month);
@@ -83,7 +112,8 @@ function breakdown(stats) {
 }
 
 function timing(stats) {
-  const largest = Math.max(stats.timedQuiz ? stats.quizMs / stats.timedQuiz : 0, stats.timedSignedReview ? stats.signedReviewMs / stats.timedSignedReview : 0, 1);
+  const { timedQuiz, quizMs, timedFilteredSignedReview, filteredSignedReviewMs } = stats;
+  const largest = Math.max(timedQuiz ? quizMs / timedQuiz : 0, timedFilteredSignedReview ? filteredSignedReviewMs / timedFilteredSignedReview : 0, 1);
   const bar = (label, ms, size) => {
     const width = size ? Math.floor(ms / size * 1000 / largest) / 10 : 0;
     return `<div class="admin-bar"><span>${label}</span><strong>${average(ms, size)}</strong>
@@ -93,7 +123,7 @@ function timing(stats) {
   return `<section class="admin-card admin-timing" aria-labelledby="admin-timing-title">
     <h2 id="admin-timing-title">Signed numbers quiz timing</h2>
     <p>Average active time per answer for the selected month.</p>
-    <div class="admin-bars">${bar("Quiz", stats.quizMs, stats.timedQuiz)}${bar("Review", stats.signedReviewMs, stats.timedSignedReview)}</div>
+    <div class="admin-bars">${bar("Quiz", quizMs, timedQuiz)}${bar("Review", filteredSignedReviewMs, timedFilteredSignedReview)}</div>
     <div class="admin-timing-totals">
       ${metric("Quizzes passed", `${count(stats.quizPasses)} / ${count(stats.quizRuns)}`, "Runs that ended in a pass or a wrong answer")}
       ${metric("Average time to pass", average(stats.passedQuizMs, stats.timedPasses), plural(stats.timedPasses, "timed pass"))}
@@ -107,12 +137,13 @@ function presenceBadge(status) {
   return `<span class="admin-presence-badge" data-presence-status="${status}"><span aria-hidden="true"></span>${label}</span>`;
 }
 
-export function createAdminDashboard({ read, redraw, watchPresence, redrawPresence = () => {} }) {
+export function createAdminDashboard({ read, readSummaries = async () => [], redraw, watchPresence, redrawPresence = () => {} }) {
   let month = activityDay().slice(0, 7);
   let learners = [];
   let selected = null;
   let day = null;
   let status = "loading";
+  let summaryUnavailable = false;
   let request = 0;
   let presenceRecords = null;
   let live = new Map();
@@ -150,9 +181,13 @@ export function createAdminDashboard({ read, redraw, watchPresence, redrawPresen
     status = "loading";
     redraw();
     try {
-      const records = await read(`${month}-01`, `${adjacentMonth(month, 1)}-01`);
+      const [records, summaries] = await Promise.all([
+        read(`${month}-01`, `${adjacentMonth(month, 1)}-01`),
+        readSummaries().catch(() => null),
+      ]);
       if (current !== request) return;
-      learners = summarizeActivity(records);
+      summaryUnavailable = summaries === null;
+      learners = summarizeActivity(records, summaries ?? []);
       if (!learners.some((learner) => learner.uid === selected)) selected = learners[0]?.uid;
       status = "ready";
     } catch {
@@ -218,12 +253,13 @@ export function createAdminDashboard({ read, redraw, watchPresence, redrawPresen
         <div class="admin-month" aria-label="Reporting month">${control("Previous month", "prev")}<h2 aria-live="polite">${monthFormat.format(monthDate(month))}</h2>${control("Next month", "next", month >= activityDay().slice(0, 7))}</div>
         ${status !== "ready" ? `<p class="admin-card" role="status">${status === "loading" ? "Loading activity…" : "Couldn’t load activity. Check your connection and try Refresh."}</p>` : `
           <section class="admin-overview" aria-label="Monthly totals">
-            ${metric("Active learners", count(learners.length))}${metric("Answers attempted", count(attempts(overview)))}${metric("Active practice time", duration(overview.activeMs))}
+            ${metric("Active learners", count(learners.filter((item) => item.days.size).length))}${metric("Answers attempted", count(attempts(overview)))}${metric("Active practice time", duration(overview.activeMs))}
           </section>
           ${!learner ? '<p class="admin-card">No signed-in activity recorded for this month.</p>' : `
             <section class="admin-card" aria-labelledby="admin-learners"><h2 id="admin-learners">Learners</h2>
-            <div class="admin-table-wrap"><table><thead><tr><th scope="col">Account</th><th scope="col">Status</th><th scope="col">Active days</th><th scope="col">Attempts</th><th scope="col">Active time</th><th scope="col">Most recent activity</th></tr></thead>
-            <tbody>${learners.map((item) => `<tr class="${item === learner ? "selected" : ""}"><th scope="row"><button type="button" class="text-button" data-action="admin-user:${esc(item.uid)}" aria-pressed="${item === learner}">${esc(item.email)}</button></th><td data-label="Status" data-presence-uid="${esc(item.uid)}">${badge(item.uid)}</td><td data-label="Active days">${count(item.days.size)}</td><td data-label="Attempts">${count(attempts(item))}</td><td data-label="Active time">${duration(item.activeMs)}</td><td data-label="Most recent activity">${lastFormat.format(item.lastAt)}</td></tr>`).join("")}</tbody></table></div></section>
+            <div class="admin-table-wrap"><table><thead><tr><th scope="col">Account</th><th scope="col">Status</th><th scope="col">Lessons completed</th><th scope="col">Best review streak</th><th scope="col">Active days</th><th scope="col">Attempts</th><th scope="col">Active time</th><th scope="col">Most recent activity</th></tr></thead>
+            <tbody>${learners.map((item) => `<tr class="${item === learner ? "selected" : ""}"><th scope="row"><button type="button" class="text-button" data-action="admin-user:${esc(item.uid)}" aria-pressed="${item === learner}">${esc(item.email)}</button></th><td data-label="Status" data-presence-uid="${esc(item.uid)}">${badge(item.uid)}</td><td data-label="Lessons completed">${item.summary ? count(item.summary.completedLessons) : "—"}</td><td data-label="Best review streak">${item.summary ? count(bestStreak(item.summary)) : "—"}</td><td data-label="Active days">${count(item.days.size)}</td><td data-label="Attempts">${count(attempts(item))}</td><td data-label="Active time">${duration(item.activeMs)}</td><td data-label="Most recent activity">${item.lastAt ? lastFormat.format(item.lastAt) : "—"}</td></tr>`).join("")}</tbody></table></div></section>
+            ${learnerOverview(learner, summaryUnavailable)}
             <div class="admin-detail"><section class="admin-card" aria-labelledby="admin-calendar-title"><h2 id="admin-calendar-title">Activity calendar</h2><p class="admin-account">${esc(learner.email)}</p>
             ${calendar(month, learner, day)}
             <div class="admin-day-detail" aria-live="polite"><h3>${day ? dayFormat.format(date(day)) : "Month totals"}</h3>

@@ -138,7 +138,34 @@ test("Firestore isolates accounts, validates saves, and protects reset epochs", 
     await assertFails(getDocs(collection(impersonatorDb, "practiceActivity")));
     const results = await assertSucceeds(getDocs(collection(adminDb, "practiceActivity")));
     assert.deepEqual(results.docs.find((snapshot) => snapshot.id === id).data(), batch);
+    const { timedReview, reviewMs, excludedReview, timedFilteredSignedReview, filteredSignedReviewMs, ...oldBatch } = batch;
+    const oldLedger = doc(learnerDb, "practiceActivity", "learner_a0112233-4455-6677-8899-aabbccddeeff");
+    await assertSucceeds(setDoc(oldLedger, oldBatch));
+    const newLedger = doc(learnerDb, "practiceActivity", "learner_b0112233-4455-6677-8899-aabbccddeeff");
+    const filteredBatch = { ...batch, review: 2, timedReview: 1, reviewMs: 120000, excludedReview: 1, timedFilteredSignedReview: 1, filteredSignedReviewMs: 120000 };
+    await assertFails(setDoc(newLedger, { ...filteredBatch, reviewMs: 120001 }));
+    await assertSucceeds(setDoc(newLedger, filteredBatch));
     await assertFails(getDoc(doc(adminDb, "progress/alice")));
+    const learnerSave = doc(learnerDb, "progress", "learner");
+    const summaryDoc = doc(learnerDb, "practiceSummaries", "learner");
+    const summary = { email: batch.email, revision: 0, completedLessons: 0,
+      reviewBest: { fractions: 0, integers: 0, pemdas: 0, factors: 0 } };
+    await assertSucceeds(setDoc(summaryDoc, summary));
+    await assertSucceeds(setDoc(learnerSave, save(0, 1, {
+      ...data, activityScores: { integers: 17 }, progress: { 'integers-1': { solved: [0], answers: { '0': 'private' } } },
+    })));
+    await assertFails(setDoc(summaryDoc, summary));
+    await assertFails(setDoc(summaryDoc, { ...summary, revision: 1 }));
+    const syncedSummary = { ...summary, revision: 1, reviewBest: { ...summary.reviewBest, integers: 17 } };
+    await assertFails(setDoc(summaryDoc, { ...syncedSummary, completedLessons: 2 }));
+    await assertFails(setDoc(summaryDoc, { ...syncedSummary, answers: { '0': 'private' } }));
+    await assertFails(setDoc(doc(impersonatorDb, "practiceSummaries", "learner"), syncedSummary));
+    await assertSucceeds(setDoc(summaryDoc, syncedSummary));
+    await assertFails(getDoc(summaryDoc));
+    await assertFails(getDocs(collection(guestDb, "practiceSummaries")));
+    await assertFails(getDocs(collection(impersonatorDb, "practiceSummaries")));
+    assert.deepEqual((await assertSucceeds(getDoc(doc(adminDb, "practiceSummaries", "learner")))).data(), syncedSummary);
+    await assertFails(getDoc(doc(adminDb, "progress", "learner")));
     const presence = { uid: batch.uid, email: batch.email, seenAt: Date.now(), practicing: false };
     const presenceDoc = doc(learnerDb, "practicePresence", id);
     await assertSucceeds(setDoc(presenceDoc, presence));

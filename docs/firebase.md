@@ -72,6 +72,12 @@ until Firestore acknowledges them. Each batch identifies the account and Pacific
 date and contains counters and timing totals. Answer text and keystrokes are
 excluded. The dashboard reads one month at a time.
 
+When learners sync, their current completion count and per-topic best review
+streaks are mirrored to `practiceSummaries`. Only the dashboard UID can read
+that collection. Review averages use new timing samples of up to two active
+minutes per answer. Older activity batches remain readable and do not affect
+the filtered averages.
+
 Practice time is committed through the last submitted answer in an active
 interval. The clock pauses when the tab loses focus and starts a new interval
 after five minutes without interaction. Quiz and signed-number review per-answer

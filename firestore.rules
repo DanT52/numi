@@ -22,10 +22,13 @@ service cloud.firestore {
       let count = s.lesson + s.quiz + s.review + s.warmup;
       return owner(s.uid)
         && id.matches(s.uid + '_[a-f0-9-]{36}')
-        && s.keys().size() == 18
-        && s.keys().hasOnly(['uid', 'email', 'day', 'lastAt', 'activeMs', 'lesson', 'quiz', 'review', 'warmup',
+        && s.keys().hasAll(['uid', 'email', 'day', 'lastAt', 'activeMs', 'lesson', 'quiz', 'review', 'warmup',
           'correct', 'timedQuiz', 'quizMs', 'timedSignedReview', 'signedReviewMs', 'quizRuns', 'quizPasses',
           'timedPasses', 'passedQuizMs'])
+        && s.keys().hasOnly(['uid', 'email', 'day', 'lastAt', 'activeMs', 'lesson', 'quiz', 'review', 'warmup',
+          'correct', 'timedQuiz', 'quizMs', 'timedSignedReview', 'signedReviewMs', 'quizRuns', 'quizPasses',
+          'timedPasses', 'passedQuizMs', 'timedReview', 'reviewMs', 'excludedReview', 'timedFilteredSignedReview',
+          'filteredSignedReviewMs'])
         && s.email == request.auth.token.email && s.email is string && s.email.size() <= 254
         && s.day is string && s.day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
         && s.lastAt is int && s.lastAt > 0 && s.lastAt <= request.time.toMillis() + 300000
@@ -35,6 +38,11 @@ service cloud.firestore {
         && validScore(s, 'correct', count)
         && validScore(s, 'timedQuiz', s.quiz) && validScore(s, 'quizMs', 90000000)
         && validScore(s, 'timedSignedReview', s.review) && validScore(s, 'signedReviewMs', 90000000)
+        && validScore(s, 'timedReview', s.review) && validScore(s, 'excludedReview', s.review - score(s, 'timedReview'))
+        && validScore(s, 'reviewMs', score(s, 'timedReview') * 120000)
+        && validScore(s, 'timedFilteredSignedReview', score(s, 'timedReview'))
+        && validScore(s, 'filteredSignedReviewMs', score(s, 'reviewMs'))
+        && validScore(s, 'filteredSignedReviewMs', score(s, 'timedFilteredSignedReview') * 120000)
         && validScore(s, 'quizRuns', s.quiz) && validScore(s, 'quizPasses', s.quizRuns)
         && validScore(s, 'timedPasses', s.quizPasses) && validScore(s, 'passedQuizMs', 90000000);
     }
@@ -83,6 +91,22 @@ service cloud.firestore {
       return d.progress.size() == 0 && d.lesson == null && d.game.best == 0 && d.game.streak == 0
         && d.get('activityScores', {}).size() == 0;
     }
+    function validPracticeSummary(uid) {
+      let s = request.resource.data;
+      let path = /databases/$(database)/documents/progress/$(uid);
+      let save = exists(path) ? get(path).data : {};
+      let data = save.get('data', {});
+      let scores = data.get('activityScores', {});
+      return s.keys().hasOnly(['email', 'revision', 'completedLessons', 'reviewBest'])
+        && s.email is string && s.email.size() <= 254 && s.email == request.auth.token.email
+        && s.revision is int && s.revision == save.get('revision', 0)
+        && s.completedLessons is int && s.completedLessons >= 0
+        && s.completedLessons <= data.get('progress', {}).size()
+        && s.reviewBest is map && s.reviewBest == {
+          'fractions': score(scores, 'fractions'), 'integers': score(scores, 'integers'),
+          'pemdas': score(scores, 'pemdas'), 'factors': score(scores, 'factors')
+        };
+    }
     match /practiceActivity/{id} {
       allow read: if activityAdmin();
       allow create: if validActivityBatch(id);
@@ -93,6 +117,10 @@ service cloud.firestore {
       allow read: if activityAdmin();
       allow create, update: if ownsPresence(id) && validPresence();
       allow delete: if ownsPresence(id);
+    }
+    match /practiceSummaries/{uid} {
+      allow read: if activityAdmin();
+      allow create, update: if owner(uid) && validPracticeSummary(uid);
     }
     match /progress/{uid} {
       allow read: if owner(uid);

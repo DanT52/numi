@@ -500,7 +500,7 @@ function settingsView() {
     ["ocean", "Ocean", "Clear blue & sea foam"],
     ["warm", "Warm clay", "Terracotta & soft sand"],
   ];
-  return `<div class="page-heading"><h1>Settings</h1></div><div class="settings-layout"><section class="settings-card">${accounts?.view() || ""}<p>When signed in, Numi shares your online and practice status with the app owner, along with active days, estimated practice time, answer counts, and quiz and review timing.</p><h2>Appearance</h2><p>Changes apply straight away and are saved in this browser.</p><fieldset class="theme-options"><legend>Color theme</legend>${themes.map(([id, title, description]) => `<label class="theme-option ${appearance.theme === id ? "selected" : ""}"><input type="radio" name="color-theme" value="${id}" data-setting="theme" ${appearance.theme === id ? "checked" : ""}><span class="theme-swatch ${id}" aria-hidden="true"></span><span><strong>${title}</strong><small>${description}</small></span></label>`).join("")}</fieldset><div class="settings-fields"><label><span>Text size</span><select data-setting="size" aria-label="Text size">${[
+  return `<div class="page-heading"><h1>Settings</h1></div><div class="settings-layout"><section class="settings-card">${accounts?.view() || ""}<p>When signed in, Numi shares your online and practice status with the app owner, along with lesson completion, review streaks, answer counts, active days, and practice and timing estimates.</p><h2>Appearance</h2><p>Changes apply straight away and are saved in this browser.</p><fieldset class="theme-options"><legend>Color theme</legend>${themes.map(([id, title, description]) => `<label class="theme-option ${appearance.theme === id ? "selected" : ""}"><input type="radio" name="color-theme" value="${id}" data-setting="theme" ${appearance.theme === id ? "checked" : ""}><span class="theme-swatch ${id}" aria-hidden="true"></span><span><strong>${title}</strong><small>${description}</small></span></label>`).join("")}</fieldset><div class="settings-fields"><label><span>Text size</span><select data-setting="size" aria-label="Text size">${[
     ["standard", "Standard"],
     ["comfortable", "Comfortable (default)"],
     ["large", "Extra large"],
@@ -767,6 +767,7 @@ async function showAdmin() {
     if (!isAdmin() || state.view !== "admin") return;
     dashboard ||= createAdminDashboard({
       read: (from, until) => accounts.readPracticeActivity(from, until),
+      readSummaries: () => accounts.readPracticeSummaries(),
       watchPresence: (callback) => accounts.watchPresence(callback),
       redrawPresence: () => {
         if (isAdmin() && state.view === "admin") dashboard?.paintPresence(document);

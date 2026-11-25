@@ -1,6 +1,7 @@
 import { cloudDocument, emptyCloudProgress } from "./cloud-progress.js";
 import { adminUid } from "./practice-stats.js";
 import { presenceTimeout } from "./practice-presence.js";
+import { practiceSummary } from "./practice-summary.js";
 
 // Firebase's browser configuration is public. Authorization lives in firestore.rules.
 export const firebaseConfig = {
@@ -80,8 +81,35 @@ export function createFirebaseAdapter(appSDK, authSDK, dbSDK) {
       const snapshot = await dbSDK.getDocsFromServer(days);
       return snapshot.docs.map((doc) => doc.data());
     },
+    async readPracticeSummaries() {
+      if (auth.currentUser?.uid !== adminUid) throw new Error("Admin access required");
+      const snapshot = await dbSDK.getDocsFromServer(dbSDK.collection(db, "practiceSummaries"));
+      return snapshot.docs.map((doc) => ({ ...doc.data(), uid: doc.id }));
+    },
     progress(uid) {
       const ref = dbSDK.doc(db, "progress", uid);
+      let currentSummary;
+      let savedSummary;
+      let publishingSummary = false;
+
+      async function publishSummary() {
+        if (publishingSummary || !currentSummary || auth.currentUser?.uid !== uid) return;
+        const summary = currentSummary;
+        const { revision, ...totals } = summary;
+        const key = JSON.stringify(totals);
+        if (key === savedSummary) return;
+        publishingSummary = true;
+        try {
+          await dbSDK.setDoc(dbSDK.doc(db, "practiceSummaries", uid), { ...totals, revision });
+          savedSummary = key;
+        } catch {
+          // Progress is already saved. A later server snapshot can retry its summary.
+        } finally {
+          publishingSummary = false;
+          if (currentSummary !== summary) publishSummary();
+        }
+      }
+
       return {
         watch(callback, onError) {
           return dbSDK.onSnapshot(
@@ -92,8 +120,18 @@ export function createFirebaseAdapter(appSDK, authSDK, dbSDK) {
               if (
                 !snapshot.metadata.fromCache &&
                 !snapshot.metadata.hasPendingWrites
-              )
-                callback(snapshot.exists() ? snapshot.data() : null);
+              ) {
+                const value = snapshot.exists() ? snapshot.data() : null;
+                callback(value);
+                const user = auth.currentUser;
+                if (user?.uid !== uid || !user.email) return;
+                try {
+                  currentSummary = practiceSummary(user.email, value);
+                  publishSummary();
+                } catch {
+                  // Unsupported saves are handled by progress sync.
+                }
+              }
             },
             onError,
           );

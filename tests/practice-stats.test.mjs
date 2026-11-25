@@ -4,6 +4,8 @@ import { parseHTML } from "linkedom";
 import { activityDay, createPracticeClock, createPracticeTracker, emptyStats } from "../dist/practice-stats.js";
 import { createAdminDashboard, summarizeActivity } from "../dist/admin-dashboard.js";
 import { createPresenceReporter, onlineLearners, presenceTimeout } from "../dist/practice-presence.js";
+import { practiceSummary } from "../dist/practice-summary.js";
+import { lessons } from "../dist/lessons.js";
 
 function exampleClock(initial = Date.parse("2026-11-25T17:00:00Z")) {
   let time = initial;
@@ -85,10 +87,48 @@ test("timing compares the signed review and quiz and only measures complete obse
   clock.answer("quiz", { correct: true, finished: true });
   assert.equal(stats().timedQuiz, 2);
   assert.equal(stats().quizMs, 23_000);
-  assert.equal(stats().signedReviewMs, 32_000);
+  assert.equal(stats().filteredSignedReviewMs, 32_000);
   assert.equal(stats().quizPasses, 2);
   assert.equal(stats().timedPasses, 1);
   assert.equal(stats().passedQuizMs, 28_000);
+});
+
+test("review timing includes all topics and excludes answers over two active minutes", () => {
+  const { clock, stats, wait } = exampleClock();
+  clock.interact();
+  for (const [seconds, topic] of [[120, "integers"], [121, "integers"], [20, "fractions"]]) {
+    clock.openQuestion();
+    wait(seconds);
+    clock.answer("review", { correct: true, topic });
+  }
+  assert.equal(stats().review, 3);
+  assert.equal(stats().timedReview, 2);
+  assert.equal(stats().reviewMs, 140_000);
+  assert.equal(stats().excludedReview, 1);
+  assert.equal(stats().timedFilteredSignedReview, 1);
+  assert.equal(stats().filteredSignedReviewMs, 120_000);
+});
+
+test("the admin summary derives completed lessons and review records from a saved document", () => {
+  const [complete, incomplete] = lessons;
+  const completedIndices = complete.problems.map((_, index) => index);
+  const email = "learner@example.com";
+  const save = {
+    version: 1, revision: 7, epoch: 0,
+    data: {
+      version: 1,
+      progress: {
+        [complete.id]: { solved: completedIndices, answers: { 0: "private" } },
+        [incomplete.id]: { solved: [0], answers: {} },
+      },
+      activityScores: { fractions: 17, integers: 6, signedQuizBest: 10 },
+    },
+  };
+  assert.deepEqual(practiceSummary(email, save), {
+    email, revision: 7, completedLessons: 1,
+    reviewBest: { fractions: 17, integers: 6, pemdas: 0, factors: 0 },
+  });
+  assert.equal(practiceSummary(email, { ...save, data: {} }).completedLessons, 0);
 });
 
 test("stats retries keep the same batch ID without leaking the signed-out account’s queue", async () => {
@@ -131,17 +171,25 @@ test("dashboard groups calendar days and shows comparable timing and sample size
   const base = { uid: "learner", email: "learner@example.com", lastAt: Date.now(), day: today, ...emptyStats() };
   const rows = [
     { ...base, quiz: 10, quizMs: 80_000, timedQuiz: 10, quizRuns: 1, quizPasses: 1, timedPasses: 1, passedQuizMs: 99_000 },
-    { ...base, review: 5, signedReviewMs: 100_000, timedSignedReview: 5, activeMs: 125_000, warmup: 1 },
+    { ...base, review: 5, signedReviewMs: 900_000, timedSignedReview: 5, activeMs: 125_000, warmup: 1,
+      reviewMs: 90_000, timedReview: 3, excludedReview: 1, filteredSignedReviewMs: 40_000, timedFilteredSignedReview: 2 },
   ];
-  const [learner] = summarizeActivity(rows);
+  const summary = { uid: base.uid, email: base.email, completedLessons: 3, reviewBest: { integers: 12 } };
+  const summaries = [summary, { ...summary, uid: "inactive", email: "inactive@example.com" }];
+  const [learner, inactive] = summarizeActivity(rows, summaries);
   assert.equal(learner.days.size, 1);
   assert.equal(learner.days.get(today).quiz, 10);
-  const dashboard = createAdminDashboard({ read: async () => rows, redraw: () => {} });
+  assert.equal(inactive.days.size, 0);
+  const dashboard = createAdminDashboard({ read: async () => rows, readSummaries: async () => summaries, redraw: () => {} });
   await dashboard.load();
   const { document } = parseHTML(dashboard.view());
   assert.match(document.querySelector(`[data-action="admin-day:${today}"]`).getAttribute("aria-label"), /16 attempts, 2m 5s active/);
   assert.deepEqual([...document.querySelectorAll(".admin-bar strong")].map(({ textContent }) => textContent), ["8s", "20s"]);
   assert.match(document.querySelector(".admin-timing").textContent, /1m 39s/);
+  assert.deepEqual([...document.querySelectorAll(".admin-learner-overview strong")].map(({ textContent }) => textContent), [`3 / ${lessons.length}`, "12", "30s"]);
+  assert.match(document.querySelector(".admin-learner-overview").textContent, /3 timed answers · 1 excluded/);
+  assert.equal(document.querySelector('[data-label="Lessons completed"]').textContent, "3");
+  assert.equal(document.querySelector('.admin-overview .admin-metric strong').textContent, "1");
 });
 
 test("live status uses the latest heartbeat and keeps a learner practicing across tabs", () => {
