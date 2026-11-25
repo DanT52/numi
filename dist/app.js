@@ -8,6 +8,7 @@ import {
 import { migrateLessonProgress } from "./progress-migration.js";
 import { createAccountManager } from "./account.js";
 import { adminUid, createPracticeTracker } from "./practice-stats.js";
+import { createPresenceReporter } from "./practice-presence.js";
 import {
   activityIsOver,
   activityQuestion,
@@ -116,6 +117,16 @@ const tracker = createPracticeTracker({
   write: (entry) => accounts.writePracticeActivity(entry),
   visible: activityVisible,
 });
+const presence = createPresenceReporter({
+  write: (id, entry) => accounts.writePresence(id, entry),
+  remove: (id, uid) => accounts.removePresence(id, uid),
+  online: () => globalThis.navigator?.onLine !== false,
+});
+
+function syncPresenceScreen() {
+  const problem = document.querySelector('#main :is(#answer-form, #activity-answer-form, [data-action^="activity-sign:"], [data-action^="activity-choice:"], [data-action="activity-next"])');
+  presence.setPracticeScreen(activityVisible() && !!problem);
+}
 function save() {
   try {
     if (accounts) accounts.save(state);
@@ -489,7 +500,7 @@ function settingsView() {
     ["ocean", "Ocean", "Clear blue & sea foam"],
     ["warm", "Warm clay", "Terracotta & soft sand"],
   ];
-  return `<div class="page-heading"><h1>Settings</h1></div><div class="settings-layout"><section class="settings-card">${accounts?.view() || ""}<p>When signed in, Numi records active days, estimated practice time, answer counts, and quiz and review timing for the app owner.</p><h2>Appearance</h2><p>Changes apply straight away and are saved in this browser.</p><fieldset class="theme-options"><legend>Color theme</legend>${themes.map(([id, title, description]) => `<label class="theme-option ${appearance.theme === id ? "selected" : ""}"><input type="radio" name="color-theme" value="${id}" data-setting="theme" ${appearance.theme === id ? "checked" : ""}><span class="theme-swatch ${id}" aria-hidden="true"></span><span><strong>${title}</strong><small>${description}</small></span></label>`).join("")}</fieldset><div class="settings-fields"><label><span>Text size</span><select data-setting="size" aria-label="Text size">${[
+  return `<div class="page-heading"><h1>Settings</h1></div><div class="settings-layout"><section class="settings-card">${accounts?.view() || ""}<p>When signed in, Numi shares your online and practice status with the app owner, along with active days, estimated practice time, answer counts, and quiz and review timing.</p><h2>Appearance</h2><p>Changes apply straight away and are saved in this browser.</p><fieldset class="theme-options"><legend>Color theme</legend>${themes.map(([id, title, description]) => `<label class="theme-option ${appearance.theme === id ? "selected" : ""}"><input type="radio" name="color-theme" value="${id}" data-setting="theme" ${appearance.theme === id ? "checked" : ""}><span class="theme-swatch ${id}" aria-hidden="true"></span><span><strong>${title}</strong><small>${description}</small></span></label>`).join("")}</fieldset><div class="settings-fields"><label><span>Text size</span><select data-setting="size" aria-label="Text size">${[
     ["standard", "Standard"],
     ["comfortable", "Comfortable (default)"],
     ["large", "Extra large"],
@@ -658,6 +669,7 @@ function render() {
               : progressView();
   document.querySelector("#app").innerHTML =
     header() + `<main id="main" tabindex="-1">${content}</main>`;
+  syncPresenceScreen();
   document.body.classList.toggle("tools-open", overlay);
   if (overlay) {
     updateToolContext();
@@ -731,6 +743,7 @@ function closeTools() {
 
 function go(view) {
   if (view === "admin" && !isAdmin()) return;
+  if (state.view === "admin" && view !== "admin") dashboard?.stopPresence();
   if (view === "admin" || state.view === "admin") tracker.clock?.stopSession();
   tracker.clock?.leaveActivity();
   delete state.activity;
@@ -754,6 +767,10 @@ async function showAdmin() {
     if (!isAdmin() || state.view !== "admin") return;
     dashboard ||= createAdminDashboard({
       read: (from, until) => accounts.readPracticeActivity(from, until),
+      watchPresence: (callback) => accounts.watchPresence(callback),
+      redrawPresence: () => {
+        if (isAdmin() && state.view === "admin") dashboard?.paintPresence(document);
+      },
       redraw: (focus) => {
         if (!isAdmin() || state.view !== "admin") return;
         render();
@@ -761,6 +778,7 @@ async function showAdmin() {
       },
     });
     dashboard.load();
+    dashboard.startPresence();
   } catch {
     if (isAdmin() && state.view === "admin") {
       go("lessons");
@@ -1296,8 +1314,16 @@ accounts = createAccountManager({
     dashboard?.dispose();
     dashboard = undefined;
     tracker.setUser(user);
+    presence.setUser(user);
   },
-  beforeSignOut: () => tracker.flush(),
+  beforeSignOut: () => {
+    tracker.flush();
+    presence.leave();
+  },
+  onSignOutError: () => {
+    presence.resume();
+    syncPresenceScreen();
+  },
   onStorageError: () => {
     storageFailed = true;
   },
@@ -1312,24 +1338,38 @@ if (
     document.addEventListener(event, (e) => {
       if (e.isTrusted && state.view !== "admin") tracker.clock?.interact();
     }, true);
+    document.addEventListener(event, (e) => {
+      if (e.isTrusted && e.target.closest?.(".lesson-layout, .activity-card, #tools-dialog")) presence.interact();
+    });
   }
   function pauseTracking() {
     tracker.clock?.pause();
     tracker.flush();
+    presence.setPracticeScreen(false);
+  }
+  function resumeTracking() {
+    tracker.clock?.resume();
+    syncPresenceScreen();
   }
   window.addEventListener("blur", pauseTracking);
-  window.addEventListener("focus", () => tracker.clock?.resume());
+  window.addEventListener("focus", resumeTracking);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) pauseTracking();
-    else tracker.clock?.resume();
+    else resumeTracking();
   });
   window.addEventListener("online", () => {
     accounts.online();
     tracker.flush();
+    presence.reconnect();
   });
   window.addEventListener("offline", () => accounts.offline());
   window.addEventListener("pagehide", () => {
     pauseTracking();
+    presence.leave();
     accounts.flush()?.catch(() => {});
+  });
+  window.addEventListener("pageshow", () => {
+    presence.resume();
+    syncPresenceScreen();
   });
 }

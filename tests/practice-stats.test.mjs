@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { parseHTML } from "linkedom";
 import { activityDay, createPracticeClock, createPracticeTracker, emptyStats } from "../dist/practice-stats.js";
 import { createAdminDashboard, summarizeActivity } from "../dist/admin-dashboard.js";
+import { createPresenceReporter, onlineLearners, presenceTimeout } from "../dist/practice-presence.js";
 
 function exampleClock(initial = Date.parse("2026-11-25T17:00:00Z")) {
   let time = initial;
@@ -141,4 +142,89 @@ test("dashboard groups calendar days and shows comparable timing and sample size
   assert.match(document.querySelector(`[data-action="admin-day:${today}"]`).getAttribute("aria-label"), /16 attempts, 2m 5s active/);
   assert.deepEqual([...document.querySelectorAll(".admin-bar strong")].map(({ textContent }) => textContent), ["8s", "20s"]);
   assert.match(document.querySelector(".admin-timing").textContent, /1m 39s/);
+});
+
+test("live status uses the latest heartbeat and keeps a learner practicing across tabs", () => {
+  const now = 400_000;
+  const session = { uid: "learner", email: "learner@example.com", seenAt: now, practicing: false };
+  const learners = onlineLearners([
+    session,
+    { ...session, seenAt: now - 10_000, practicing: true },
+    { ...session, uid: "expired", seenAt: now - presenceTimeout, practicing: true },
+    { ...session, uid: "idle" },
+  ], now);
+  assert.deepEqual([...learners.keys()], ["learner", "idle"]);
+  assert.equal(learners.get("learner").practicing, true);
+  assert.equal(learners.get("learner").seenAt, now);
+  assert.equal(learners.get("idle").practicing, false);
+});
+
+test("presence reports recent interaction, inactivity, and leaving without recording answers", async (t) => {
+  t.mock.timers.enable({ apis: ["setInterval", "setTimeout", "Date"], now: 100_000 });
+  const writes = [];
+  const removes = [];
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
+  const reporter = createPresenceReporter({
+    online: () => true,
+    write: async (id, entry) => writes.push({ id, ...entry }),
+    remove: async (...args) => removes.push(args),
+  });
+  reporter.interact();
+  assert.equal(writes.length, 0);
+  reporter.setUser({ uid: "learner", email: "learner@example.com" });
+  await settle();
+  reporter.setPracticeScreen(true);
+  assert.equal(writes.length, 1);
+  reporter.interact();
+  await settle();
+  assert.equal(writes.at(-1).practicing, true);
+  t.mock.timers.tick(45_000);
+  await settle();
+  assert.equal(writes.at(-1).practicing, true);
+  t.mock.timers.tick(45_000);
+  await settle();
+  assert.equal(writes.at(-1).practicing, false);
+  reporter.interact();
+  await settle();
+  reporter.setPracticeScreen(false);
+  await settle();
+  assert.equal(writes.at(-1).practicing, false);
+  reporter.leave();
+  assert.deepEqual(removes, [[writes[0].id, "learner"]]);
+  assert.ok(writes.every((item) => item.id === writes[0].id));
+  const total = writes.length;
+  t.mock.timers.tick(180_000);
+  assert.equal(writes.length, total);
+});
+
+test("admin live status updates the roster and learner rows without rerendering the dashboard", async () => {
+  let notify;
+  let unsubscribed = false;
+  const now = Date.now();
+  const learner = { ...emptyStats(), uid: "existing", email: "existing@example.com", day: activityDay(now), lastAt: now };
+  const dashboard = createAdminDashboard({
+    read: async () => [learner], redraw: () => {},
+    watchPresence(callback) {
+      notify = callback;
+      return () => { unsubscribed = true; };
+    },
+  });
+  await dashboard.load();
+  dashboard.startPresence();
+  try {
+    const { document } = parseHTML(dashboard.view());
+    assert.equal(document.querySelector("[data-presence-status]").textContent, "Unknown");
+    const calendar = document.querySelector(".admin-calendar");
+    notify([{ uid: "new", email: "new@example.com", seenAt: now, practicing: true }]);
+    dashboard.paintPresence(document);
+    assert.match(document.querySelector("[data-admin-live]").textContent, /new@example\.comPracticing/);
+    assert.equal(document.querySelector("[data-presence-uid]").textContent, "Offline");
+    assert.equal(document.querySelector(".admin-calendar"), calendar);
+    notify([{ uid: learner.uid, email: learner.email, seenAt: now, practicing: false }]);
+    dashboard.paintPresence(document);
+    assert.equal(document.querySelector("[data-presence-uid]").textContent, "Online");
+  } finally {
+    dashboard.dispose();
+  }
+  assert.equal(unsubscribed, true);
 });

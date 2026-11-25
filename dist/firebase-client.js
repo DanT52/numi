@@ -1,5 +1,6 @@
 import { cloudDocument, emptyCloudProgress } from "./cloud-progress.js";
 import { adminUid } from "./practice-stats.js";
+import { presenceTimeout } from "./practice-presence.js";
 
 // Firebase's browser configuration is public. Authorization lives in firestore.rules.
 export const firebaseConfig = {
@@ -47,6 +48,24 @@ export function createFirebaseAdapter(appSDK, authSDK, dbSDK) {
     },
     resetPassword: (email) => authSDK.sendPasswordResetEmail(auth, email),
     signOut: () => authSDK.signOut(auth),
+    async writePresence(id, entry) {
+      if (auth.currentUser?.uid !== entry.uid) return;
+      await dbSDK.setDoc(dbSDK.doc(db, "practicePresence", id), entry);
+    },
+    async removePresence(id, uid) {
+      if (auth.currentUser?.uid !== uid) return;
+      await dbSDK.deleteDoc(dbSDK.doc(db, "practicePresence", id));
+    },
+    watchPresence(callback) {
+      if (auth.currentUser?.uid !== adminUid) return () => {};
+      const active = dbSDK.query(
+        dbSDK.collection(db, "practicePresence"),
+        dbSDK.where("seenAt", ">", Date.now() - presenceTimeout),
+      );
+      return dbSDK.onSnapshot(active, { includeMetadataChanges: true }, (snapshot) => {
+        callback(snapshot.metadata.fromCache ? null : snapshot.docs.map((doc) => doc.data()));
+      }, () => callback(null));
+    },
     writePracticeActivity({ id, ...entry }) {
       if (auth.currentUser?.uid !== entry.uid) return Promise.reject(new Error("Account changed"));
       return dbSDK.setDoc(dbSDK.doc(db, "practiceActivity", id), entry);

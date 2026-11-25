@@ -28,6 +28,7 @@ export function createAccountManager({
   onStorageError = () => {},
   onUserChanged = () => {},
   beforeSignOut = () => {},
+  onSignOutError = () => {},
 }) {
   let api,
     user = null,
@@ -304,6 +305,7 @@ export function createAccountManager({
       message = "Signed out. You can continue as a guest.";
     } catch (error) {
       message = accountError(error);
+      onSignOutError();
     } finally {
       busy = false;
       refreshAccount();
@@ -319,6 +321,9 @@ export function createAccountManager({
     },
     writePracticeActivity: (entry) => api.writePracticeActivity(entry),
     readPracticeActivity: (from, until) => api.readPracticeActivity(from, until),
+    writePresence: (id, entry) => api.writePresence(id, entry),
+    removePresence: (id, uid) => api.removePresence(id, uid),
+    watchPresence: (callback) => api.watchPresence(callback),
     get storageKey() {
       return key;
     },

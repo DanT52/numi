@@ -139,6 +139,20 @@ test("Firestore isolates accounts, validates saves, and protects reset epochs", 
     const results = await assertSucceeds(getDocs(collection(adminDb, "practiceActivity")));
     assert.deepEqual(results.docs.find((snapshot) => snapshot.id === id).data(), batch);
     await assertFails(getDoc(doc(adminDb, "progress/alice")));
+    const presence = { uid: batch.uid, email: batch.email, seenAt: Date.now(), practicing: false };
+    const presenceDoc = doc(learnerDb, "practicePresence", id);
+    await assertSucceeds(setDoc(presenceDoc, presence));
+    await assertSucceeds(setDoc(presenceDoc, { ...presence, practicing: true }));
+    await assertFails(setDoc(presenceDoc, { ...presence, seenAt: Date.now() - 180_000 }));
+    await assertFails(setDoc(presenceDoc, { ...presence, extra: "private answer" }));
+    await assertFails(setDoc(doc(impersonatorDb, "practicePresence", id), presence));
+    await assertFails(deleteDoc(doc(impersonatorDb, "practicePresence", id)));
+    await assertFails(getDoc(presenceDoc));
+    await assertFails(getDocs(collection(guestDb, "practicePresence")));
+    await assertFails(getDocs(collection(impersonatorDb, "practicePresence")));
+    const online = await assertSucceeds(getDocs(collection(adminDb, "practicePresence")));
+    assert.equal(online.docs.find((snapshot) => snapshot.id === id).data().practicing, true);
+    await assertSucceeds(deleteDoc(presenceDoc));
     await assertFails(
       setDoc(
         doc(env.authenticatedContext("alice").firestore(), "unrelated/example"),

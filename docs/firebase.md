@@ -60,6 +60,13 @@ is configured in `dist/practice-stats.js` and `firestore.rules`. Change both if
 you transfer dashboard access. Only that UID can read `practiceActivity`. The
 existing `progress` collection remains readable by each account owner.
 
+The Admin dashboard subscribes to recent `practicePresence` entries. A signed-in
+tab updates its heartbeat every 45 seconds. Practice status requires a focused
+problem and recent interaction, and clears after 90 seconds of inactivity.
+The dashboard ignores heartbeats older than two minutes. Each signed-in tab can
+write or delete its own presence entry, and only the dashboard UID can read the
+collection.
+
 Numi collects signed-in activity and queues immutable batches in browser storage
 until Firestore acknowledges them. Each batch identifies the account and Pacific
 date and contains counters and timing totals. Answer text and keystrokes are

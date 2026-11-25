@@ -5,6 +5,18 @@ service cloud.firestore {
     function activityAdmin() {
       return owner('sUf2WIFGJfRXg5ZmlZEwy2nxMoG3');
     }
+    function ownsPresence(id) {
+      return request.auth != null && id.matches(request.auth.uid + '_[a-f0-9-]{36}');
+    }
+    function validPresence() {
+      let s = request.resource.data;
+      return s.keys().hasOnly(['uid', 'email', 'practicing', 'seenAt'])
+        && owner(s.uid)
+        && s.email is string && s.email.size() <= 254 && s.email == request.auth.token.email
+        && s.practicing is bool
+        && s.seenAt is int && s.seenAt >= request.time.toMillis() - 120000
+        && s.seenAt <= request.time.toMillis() + 60000;
+    }
     function validActivityBatch(id) {
       let s = request.resource.data;
       let count = s.lesson + s.quiz + s.review + s.warmup;
@@ -76,6 +88,11 @@ service cloud.firestore {
       allow create: if validActivityBatch(id);
       // Repeat offline uploads leave the original batch unchanged.
       allow update: if owner(resource.data.uid) && request.resource.data == resource.data;
+    }
+    match /practicePresence/{id} {
+      allow read: if activityAdmin();
+      allow create, update: if ownsPresence(id) && validPresence();
+      allow delete: if ownsPresence(id);
     }
     match /progress/{uid} {
       allow read: if owner(uid);
