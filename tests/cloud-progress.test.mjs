@@ -115,13 +115,15 @@ test("account activity records merge across devices without lowering best scores
     ...data([0]),
     activityScores: { signedQuizBest: 10, signedQuizPassed: 10, integers: 7 },
   });
-  b.sync.edit({ ...data([1]), activityScores: { integers: 3, fractions: 4 } });
+  b.sync.edit({ ...data([1]), activityScores: { integers: 3, fractions: 4, pemdasQuizBest: 10, pemdasQuizPassed: 10 } });
   await a.sync.flush();
   await b.sync.flush();
   server.broadcast();
   assert.deepEqual(b.latest.activityScores, {
     signedQuizBest: 10,
     signedQuizPassed: 10,
+    pemdasQuizBest: 10,
+    pemdasQuizPassed: 10,
     fractions: 4,
     integers: 7,
   });

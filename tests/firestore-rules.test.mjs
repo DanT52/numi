@@ -93,6 +93,8 @@ test("Firestore isolates accounts, validates saves, and protects reset epochs", 
       activityScores: {
         signedQuizBest: 10,
         signedQuizPassed: 10,
+        pemdasQuizBest: 10,
+        pemdasQuizPassed: 10,
         integers: 17,
       },
     };
@@ -102,15 +104,17 @@ test("Firestore isolates accounts, validates saves, and protects reset epochs", 
     await assertFails(
       setDoc(
         alice,
-        save(1, 6, { ...scored, activityScores: { integers: 16 } }),
+        save(1, 6, { ...scored, activityScores: { ...scored.activityScores, integers: 16 } }),
       ),
     );
     await assertFails(
       setDoc(
         alice,
-        save(1, 6, { ...scored, activityScores: { integers: "17" } }),
+        save(1, 6, { ...scored, activityScores: { ...scored.activityScores, integers: "17" } }),
       ),
     );
+    await assertFails(setDoc(alice, save(1, 6, { ...scored, activityScores: { ...scored.activityScores, pemdasQuizPassed: 0 } })));
+    await assertFails(setDoc(alice, save(1, 6, { ...scored, activityScores: { ...scored.activityScores, pemdasQuizBest: 11 } })));
     await assertSucceeds(setDoc(alice, save(2, 6)));
     await assertFails(deleteDoc(alice));
     const learnerDb = env.authenticatedContext("learner", { email: "learner@example.com" }).firestore();
@@ -138,12 +142,21 @@ test("Firestore isolates accounts, validates saves, and protects reset epochs", 
     await assertFails(getDocs(collection(impersonatorDb, "practiceActivity")));
     const results = await assertSucceeds(getDocs(collection(adminDb, "practiceActivity")));
     assert.deepEqual(results.docs.find((snapshot) => snapshot.id === id).data(), batch);
-    const { timedReview, reviewMs, excludedReview, timedFilteredSignedReview, filteredSignedReviewMs, ...oldBatch } = batch;
+    const { timedReview, reviewMs, excludedReview, timedFilteredSignedReview, filteredSignedReviewMs,
+      timedPemdasQuiz, pemdasQuizMs, pemdasQuizRuns, pemdasQuizPasses, timedPemdasPasses,
+      passedPemdasQuizMs, timedFilteredPemdasReview, filteredPemdasReviewMs, ...oldBatch } = batch;
     const oldLedger = doc(learnerDb, "practiceActivity", "learner_a0112233-4455-6677-8899-aabbccddeeff");
     await assertSucceeds(setDoc(oldLedger, oldBatch));
     const newLedger = doc(learnerDb, "practiceActivity", "learner_b0112233-4455-6677-8899-aabbccddeeff");
-    const filteredBatch = { ...batch, review: 2, timedReview: 1, reviewMs: 120000, excludedReview: 1, timedFilteredSignedReview: 1, filteredSignedReviewMs: 120000 };
-    await assertFails(setDoc(newLedger, { ...filteredBatch, reviewMs: 120001 }));
+    const filteredBatch = {
+      ...batch, review: 3, timedReview: 2, reviewMs: 145000, excludedReview: 1,
+      timedFilteredSignedReview: 1, filteredSignedReviewMs: 120000,
+      timedFilteredPemdasReview: 1, filteredPemdasReviewMs: 25000,
+      quiz: 3, timedQuiz: 1, quizMs: 12000, quizRuns: 1,
+      timedPemdasQuiz: 2, pemdasQuizMs: 18000, pemdasQuizRuns: 1, pemdasQuizPasses: 1,
+    };
+    await assertFails(setDoc(newLedger, { ...filteredBatch, reviewMs: 240001 }));
+    await assertFails(setDoc(newLedger, { ...filteredBatch, timedPemdasQuiz: 3 }));
     await assertSucceeds(setDoc(newLedger, filteredBatch));
     await assertFails(getDoc(doc(adminDb, "progress/alice")));
     const learnerSave = doc(learnerDb, "progress", "learner");

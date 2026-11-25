@@ -1,6 +1,6 @@
 import { escapeHTML as esc, math } from "./math.js";
 import { activityQuestion, activityIsOver } from "./activities.js";
-import { signedQuizGoal } from "./activity-scores.js";
+import { quizGoal } from "./activity-scores.js";
 
 const masteryBadge =
   '<span class="quiz-mastery"><span aria-hidden="true">★</span> Mastered</span>';
@@ -16,28 +16,32 @@ export function activityLinks(topic, scores = {}) {
   </div>`;
 }
 
-export function quizLessonLink(passed) {
-  return `<button type="button" class="lesson-link quiz-lesson-link" data-action="activity-quiz">
+const quizAction = (topic) => topic === "integers" ? "activity-quiz" : `activity-quiz:${topic}`;
+
+export function quizLessonLink(topic, passed) {
+  return `<button type="button" class="lesson-link quiz-lesson-link" data-action="${quizAction(topic)}">
     <span class="lesson-number" aria-hidden="true">Q</span>
-    <span><strong>Module quiz</strong><small>${signedQuizGoal} correct in a row</small></span>
+    <span><strong>Module quiz</strong><small>${quizGoal} correct in a row</small></span>
     ${passed ? masteryBadge : ""}
   </button>`;
 }
 
-export function quizSetup(completed, total, scores = {}) {
+export function quizSetup(topic, completed, total, scores = {}) {
+  const passed = scores[topic.quizPassKey];
+  const best = scores[topic.quizBestKey];
   return `<section class="activity-card" aria-labelledby="activity-title">
     <div class="activity-heading">
-      <h1 id="activity-title" tabindex="-1">Signed numbers quiz</h1>
-      ${scores.signedQuizPassed ? masteryBadge : ""}
+      <h1 id="activity-title" tabindex="-1">${esc(topic.title)} quiz</h1>
+      ${passed ? masteryBadge : ""}
     </div>
-    <p>Get ${signedQuizGoal} correct in a row to pass. You have one try per question, and a wrong answer ends the attempt.</p>
+    <p>Get ${quizGoal} correct in a row to pass. You have one try per question, and a wrong answer ends the attempt.</p>
     <p>Hints, explanations, and visual tools are unavailable during the quiz.</p>
     <p>${
       completed === total
-        ? "You’ve finished the signed numbers lessons."
-        : `You’ve completed ${completed} of ${total} signed numbers lessons. Practicing first can help, and you can start the quiz anytime.`
+        ? "You’ve finished all the lessons in this module."
+        : `You’ve completed ${completed} of ${total} lessons. Practicing first can help, and you can start the quiz anytime.`
     }</p>
-    ${scores.signedQuizBest && !scores.signedQuizPassed ? `<p>Best streak <strong>${Math.min(scores.signedQuizBest, signedQuizGoal)}</strong></p>` : ""}
+    ${best && !passed ? `<p>Best streak <strong>${Math.min(best, quizGoal)}</strong></p>` : ""}
     <form id="quiz-start-form" class="activity-form">
       <button type="submit" class="btn btn-primary">Start quiz</button>
     </form>
@@ -66,7 +70,7 @@ export function activityView(run, title, scores, renderMath) {
   const over = activityIsOver(run);
   const passed = quiz && over && run.result.correct;
   const heading = quiz
-    ? "Signed numbers quiz"
+    ? `${title} quiz`
     : warmup
       ? `${orderWarmup ? "Order of operations" : "Signed numbers"} warmup`
       : `${title} review`;
@@ -100,6 +104,7 @@ export function activityView(run, title, scores, renderMath) {
   const summary = quiz
     ? `Correct in a row <strong>${run.streak} / ${run.deck.length}</strong>`
     : `Streak points <strong>${run.streak}</strong> <span>·</span> Best <strong>${scores?.[run.topic] || 0}</strong>`;
+  const answerTip = quiz ? (run.topic === "pemdas" ? "Enter a number, such as −4 or 3.25." : "") : answerFormat(question);
 
   return `<section class="activity-card" aria-labelledby="activity-title">
     <div class="activity-heading">
@@ -111,7 +116,7 @@ export function activityView(run, title, scores, renderMath) {
         ? `<p class="activity-note">Question ${run.index + 1} of ${run.deck.length} · One try · Tools off</p>`
         : orderWarmup ? "" : `<p class="activity-note">${esc(question.group)}</p>`
     }
-    <p>${esc(question.prompt || (warmup ? "What sign is the result?" : "Find the integer result."))}</p>
+    <p>${esc(question.prompt || (warmup ? "What sign is the result?" : "Find the result."))}</p>
     <div class="practice-equation activity-equation">${orderWarmup ? operationMath(question.expr) : renderMath(question)}</div>
     ${
       run.result
@@ -131,10 +136,10 @@ export function activityView(run, title, scores, renderMath) {
         .join("")}</div>`
           : `<form id="activity-answer-form" class="activity-form">
         <label for="activity-answer">Your answer</label>
-        ${!quiz && answerFormat(question) ? `<small id="activity-answer-tip">${answerFormat(question)}</small>` : ""}
+        ${answerTip ? `<small id="activity-answer-tip">${answerTip}</small>` : ""}
         <div class="activity-answer-row">
           <input id="activity-answer" name="answer" type="text" autocomplete="off" maxlength="500" required
-            ${!quiz && answerFormat(question) ? 'aria-describedby="activity-answer-tip"' : ""}>
+            ${answerTip ? 'aria-describedby="activity-answer-tip"' : ""}>
           <button type="submit" class="btn btn-primary">Check answer</button>
         </div>
       </form>`
@@ -142,7 +147,7 @@ export function activityView(run, title, scores, renderMath) {
     ${feedback}
     <div class="activity-actions">
       ${run.result && !over ? button("Next question", "activity-next", true) : ""}
-      ${over ? button(quiz ? "Try a new quiz" : "Restart warmup", quiz ? "activity-quiz" : orderWarmup ? "activity-warmup:pemdas" : "activity-warmup", true) : ""}
+      ${over ? button(quiz ? "Try a new quiz" : "Restart warmup", quiz ? quizAction(run.topic) : orderWarmup ? "activity-warmup:pemdas" : "activity-warmup", true) : ""}
       ${button(over ? "Back to lessons" : quiz ? "End quiz" : warmup ? "End warmup" : "End review", "activity-exit")}
     </div>
   </section>`;

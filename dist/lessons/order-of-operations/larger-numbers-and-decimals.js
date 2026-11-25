@@ -3,7 +3,7 @@ export default {
   topic: "pemdas",
   title: "Larger numbers & decimals",
   subtitle: "Work through longer expressions with hundreds, thousands, and decimals.",
-  minutes: 25,
+  minutes: 40,
   tool: "calculator",
   rule: "Use the same order for whole numbers and decimals. Copy the rest of the expression as you simplify each part. Line up decimal points when adding or subtracting, and use a trailing zero if it helps.",
   example: {
@@ -107,6 +107,51 @@ export default {
       "1200-((18.5+5.5)*32-90)/3", "974",
       "Simplify the innermost sum, then work out the entire numerator before dividing by 3.",
       "18.5 + 5.5 = 24. Then 24 × 32 = 768, and 768 − 90 = 678. Finish with 678 ÷ 3 = 226, and 1200 − 226 = 974.",
+    ],
+    [
+      "275+18*(42-27)-90", "455",
+      "Subtract inside the parentheses, then multiply before adding and subtracting.",
+      "42 − 27 = 15, and 18 × 15 = 270. Then 275 + 270 − 90 = 455.",
+    ],
+    [
+      "1728/(12*4)+225/15", "51",
+      "Work out the denominator on the left, then calculate both quotients.",
+      "12 × 4 = 48. The quotients are 1728 ÷ 48 = 36 and 225 ÷ 15 = 15. Then 36 + 15 = 51.",
+    ],
+    [
+      "560-24^2/3+16", "384",
+      "Square 24 before dividing by 3. Finish the subtraction and addition from left to right.",
+      "24² = 576, and 576 ÷ 3 = 192. Then 560 − 192 = 368, and 368 + 16 = 384.",
+    ],
+    [
+      "48.6/0.6-7.25*4", "52",
+      "Scale up both numbers in the division by 10. Work out the product before subtracting.",
+      "48.6 ÷ 0.6 = 486 ÷ 6 = 81. Then 7.25 × 4 = 29, so 81 − 29 = 52.",
+    ],
+    [
+      "250.5-((18.75+6.25)*4)+0.5", "151",
+      "Begin with the innermost sum. Add and subtract from left to right when the product is ready.",
+      "18.75 + 6.25 = 25, and 25 × 4 = 100. Then 250.5 − 100 + 0.5 = 151.",
+    ],
+    [
+      "-3.5^2+(-3.5)^2+7.2/0.8", "9",
+      "Check which negative sign is part of the base. Simplify the quotient before adding.",
+      "The first term is −12.25 and the second is 12.25. They cancel. The remaining quotient is 72 ÷ 8 = 9.",
+    ],
+    [
+      "1000-(7.5-2.5)^3+33.75", "908.75",
+      "Do the subtraction in parentheses before cubing the result.",
+      "7.5 − 2.5 = 5 and 5³ = 125. Then 1000 − 125 = 875, and 875 + 33.75 = 908.75.",
+    ],
+    [
+      "1440/(3*(25-17))+(-4.5)*6", "33",
+      "Simplify the denominator from the inside out. Keep track of the sign in the right-hand product.",
+      "25 − 17 = 8, so the denominator is 24. Then 1440 ÷ 24 = 60 and (−4.5) × 6 = −27. Add to get 33.",
+    ],
+    [
+      "(325.5-75.5)/2.5+(-2.5)^2-18.75", "87.5",
+      "Simplify the parentheses and evaluate the power before combining the terms.",
+      "325.5 − 75.5 = 250, and 250 ÷ 2.5 = 100. Then (−2.5)² = 6.25, so 100 + 6.25 − 18.75 = 87.5.",
     ],
   ].map(([expr, answer, hint, solution]) => ({
     expr,

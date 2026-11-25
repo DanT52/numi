@@ -330,7 +330,7 @@ function topicCard(t) {
     })
     .join(
       "",
-    )}${ls.length > 3 ? button((expanded ? "Show fewer lessons" : `Show all ${ls.length} lessons`) + icon("chevron"), `toggle-topic:${t.id}`, "text-button lesson-list-toggle", `aria-expanded="${expanded}" aria-controls="lessons-${t.id}"`) : ""}${t.quizPassKey ? quizLessonLink(quizPassed) : ""}</div>${activityLinks(t.id, state.activityScores)}<div class="card-bottom"><span>${ls.length} guided lessons${t.quizPassKey ? " + quiz" : ""}</span><span>${status} ${complete ? icon("check") : icon("leaf")}</span></div></article>`;
+    )}${ls.length > 3 ? button((expanded ? "Show fewer lessons" : `Show all ${ls.length} lessons`) + icon("chevron"), `toggle-topic:${t.id}`, "text-button lesson-list-toggle", `aria-expanded="${expanded}" aria-controls="lessons-${t.id}"`) : ""}${t.quizPassKey ? quizLessonLink(t.id, quizPassed) : ""}</div>${activityLinks(t.id, state.activityScores)}<div class="card-bottom"><span>${ls.length} guided lessons${t.quizPassKey ? " + quiz" : ""}</span><span>${status} ${complete ? icon("check") : icon("leaf")}</span></div></article>`;
 }
 function comingSoon() {
   return `<section class="coming-soon"><div class="section-heading"><div><span class="eyebrow muted">GROW FROM HERE</span><h2>More to look forward to</h2><p>A strong foundation opens up a whole new world.</p></div><span class="badge">${icon("lock")} To be added</span></div><div class="future-grid">${upcoming.map((group, i) => `<article class="future-card"><div class="future-number">0${i + 2}</div><div><h3>${group.title}</h3><p>${i ? "From your first variable to the coordinate plane." : "Connect everyday questions to everyday math."}</p><details><summary>See ${group.items.length} upcoming topics ${icon("chevron")}</summary><ul>${group.items.map(([name, desc]) => `<li><strong>${name}</strong><span>${desc}</span></li>`).join("")}</ul></details></div></article>`).join("")}</div></section>`;
@@ -647,6 +647,7 @@ function render() {
       ? dashboard?.view() || '<div class="admin-dashboard"><h1>Activity dashboard</h1><p role="status">Loading dashboard…</p></div>'
       : activity?.mode === "quiz-setup"
       ? quizSetup(
+          topic,
           quizModule.completedLessons,
           quizModule.moduleLessons.length,
           state.activityScores,
@@ -829,19 +830,20 @@ function submitActivity(answer) {
 }
 
 function handleActivityClick(action, value) {
+  const quizTopic = value || "integers";
   if (
     quizLocked() &&
     action !== "activity-exit" &&
     action !== "activity-next" &&
-    !(action === "activity-quiz" && activityIsOver(state.activity))
+    !(action === "activity-quiz" && state.activity.topic === quizTopic && activityIsOver(state.activity))
   )
     return false;
   if (action === "activity-review")
     showActivity(startActivity("review", value));
   else if (action === "activity-warmup")
     showActivity(startActivity("warmup", value || "integers"));
-  else if (action === "activity-quiz")
-    showActivity({ mode: "quiz-setup", topic: "integers" });
+  else if (action === "activity-quiz" && topics.some(({ id, quizPassKey }) => id === quizTopic && quizPassKey))
+    showActivity({ mode: "quiz-setup", topic: quizTopic });
   else if (action === "activity-exit" && state.activity) {
     state.topic = state.activity.topic;
     state.lesson = null;
@@ -1166,7 +1168,7 @@ document.addEventListener("submit", (e) => {
     state.activity?.mode === "quiz-setup"
   ) {
     e.preventDefault();
-    showActivity(startActivity("quiz", "integers"));
+    showActivity(startActivity("quiz", state.activity.topic));
     return;
   }
   if (e.target.id === "activity-answer-form") {

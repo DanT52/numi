@@ -9,11 +9,21 @@ export function activityDay(ms = Date.now()) {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
+export const quizTimingFields = {
+  integers: { answers: "timedQuiz", ms: "quizMs", runs: "quizRuns", passes: "quizPasses", timedPasses: "timedPasses", passedMs: "passedQuizMs" },
+  pemdas: { answers: "timedPemdasQuiz", ms: "pemdasQuizMs", runs: "pemdasQuizRuns", passes: "pemdasQuizPasses", timedPasses: "timedPemdasPasses", passedMs: "passedPemdasQuizMs" },
+};
+export const reviewTimingFields = {
+  integers: { answers: "timedFilteredSignedReview", ms: "filteredSignedReviewMs" },
+  pemdas: { answers: "timedFilteredPemdasReview", ms: "filteredPemdasReviewMs" },
+};
+
 export const statFields = [
   "activeMs", "lesson", "quiz", "review", "warmup", "correct",
-  "timedQuiz", "quizMs", "timedSignedReview", "signedReviewMs",
-  "quizRuns", "quizPasses", "timedPasses", "passedQuizMs",
-  "timedReview", "reviewMs", "excludedReview", "timedFilteredSignedReview", "filteredSignedReviewMs",
+  "timedSignedReview", "signedReviewMs",
+  "timedReview", "reviewMs", "excludedReview",
+  ...Object.values(quizTimingFields).flatMap(Object.values),
+  ...Object.values(reviewTimingFields).flatMap(Object.values),
 ];
 export const emptyStats = () => Object.fromEntries(statFields.map((field) => [field, 0]));
 export const attempts = (stats) => stats.lesson + stats.quiz + stats.review + stats.warmup;
@@ -99,29 +109,33 @@ export function createPracticeClock({ record, now = Date.now, visible }) {
       pending.clear();
 
       const stats = { [mode]: 1, correct: Number(correct) };
-      if (mode === "quiz" && questionMs !== null) {
-        stats.timedQuiz = 1;
-        stats.quizMs = questionMs;
-      }
       if (mode === "review" && questionMs !== null) {
         if (questionMs > reviewTimingLimit) stats.excludedReview = 1;
         else {
           stats.timedReview = 1;
           stats.reviewMs = questionMs;
-          if (topic === "integers") {
-            stats.timedFilteredSignedReview = 1;
-            stats.filteredSignedReviewMs = questionMs;
+          const timing = reviewTimingFields[topic];
+          if (timing) {
+            stats[timing.answers] = 1;
+            stats[timing.ms] = questionMs;
           }
         }
       }
-      if (mode === "quiz" && finished) {
-        stats.quizRuns = 1;
-        stats.quizPasses = Number(correct);
-        if (correct && quizMs !== null) {
-          stats.timedPasses = 1;
-          stats.passedQuizMs = quizMs;
+      if (mode === "quiz") {
+        const timing = quizTimingFields[topic ?? "integers"];
+        if (questionMs !== null) {
+          stats[timing.answers] = 1;
+          stats[timing.ms] = questionMs;
         }
-        quizMs = null;
+        if (finished) {
+          stats[timing.runs] = 1;
+          stats[timing.passes] = Number(correct);
+          if (correct && quizMs !== null) {
+            stats[timing.timedPasses] = 1;
+            stats[timing.passedMs] = quizMs;
+          }
+          quizMs = null;
+        }
       }
       questionMs = null;
       record(day, time, stats);

@@ -80,9 +80,10 @@ the filtered averages.
 
 Practice time is committed through the last submitted answer in an active
 interval. The clock pauses when the tab loses focus and starts a new interval
-after five minutes without interaction. Quiz and signed-number review per-answer
-averages use observed question timings. An interrupted or restored quiz can still
-contribute its final result even when a full run timing is unavailable. Activity
+after five minutes without interaction. Quiz and review per-answer averages use
+observed question timings and are compared within each module. An interrupted or
+restored quiz can still contribute its final result when a full run timing is
+unavailable. Activity
 starts accumulating with this release. The existing Delete all progress control
 clears lesson progress and scores independently of aggregate activity history.
 

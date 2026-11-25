@@ -4,7 +4,7 @@ import { parseHTML } from "linkedom";
 import { lessons, totalProblems } from "../dist/lessons.js";
 import { legacyThreeNumberExpressions } from "../dist/lessons/signed-numbers/legacy-three-number-questions.js";
 import { calculate } from "../dist/math.js";
-import { activityQuestion } from "../dist/activities.js";
+import { activityQuestion, startActivity } from "../dist/activities.js";
 
 const stored = new Map();
 globalThis.localStorage = {
@@ -186,6 +186,50 @@ test("quiz locks tools, records only one answer per question, and saves a pass",
     document.querySelector('[data-action="activity-quiz"]').textContent,
     /Mastered/,
   );
+});
+
+test("order of operations quiz draws 10 distinct skills and grades decimal answers with one try", async () => {
+  stored.clear();
+  mount();
+  await import("../dist/app.js?order-quiz");
+  const practice = new Set(lessons.filter(({ topic }) => topic === "pemdas").flatMap(({ problems }) => problems.map(({ expr }) => expr)));
+  const bank = new Set();
+  for (const value of [0.1, 0.35, 0.6, 0.85]) {
+    const run = startActivity("quiz", "pemdas", () => value);
+    const questions = run.deck.map((_, index) => activityQuestion({ ...run, index }));
+    assert.equal(questions.length, 10);
+    assert.equal(new Set(questions.map(({ group }) => group)).size, 10);
+    assert.ok(questions.some(({ answer }) => answer.includes(".")));
+    questions.forEach(({ expr }) => {
+      assert.ok(!practice.has(expr), expr);
+      bank.add(expr);
+    });
+  }
+  assert.equal(bank.size, 40);
+
+  click("activity-quiz:pemdas");
+  assert.match(document.querySelector("#activity-title").textContent, /Order of operations quiz/);
+  assert.match(document.querySelector(".activity-card").textContent, /completed 0 of 3/);
+  assert.equal(document.querySelector('[data-action="open-tools"]'), null);
+  submit("#quiz-start-form");
+  type("#activity-answer", activityQuestion(persisted().activity).expr);
+  submit("#activity-answer-form"); // A correct expression is not a numeric answer.
+  assert.match(document.querySelector(".activity-feedback").textContent, /Quiz ended/);
+  click("activity-quiz:pemdas");
+  submit("#quiz-start-form");
+  for (let i = 0; i < 10; i++) {
+    const { answer } = activityQuestion(persisted().activity);
+    type("#activity-answer", answer.includes(".") ? `${answer}0` : answer);
+    submit("#activity-answer-form");
+    if (i < 9) click("activity-next");
+  }
+  assert.match(document.querySelector(".activity-feedback").textContent, /Quiz passed/);
+  assert.deepEqual(persisted().activityScores, { pemdasQuizBest: 10, pemdasQuizPassed: 10 });
+  click("activity-exit");
+  mount();
+  await import("../dist/app.js?order-quiz-mastery-reload");
+  assert.match(document.querySelector('[data-action="activity-quiz:pemdas"]').textContent, /Mastered/);
+  assert.doesNotMatch(document.querySelector("#lessons-pemdas").closest(".topic-card").textContent, /Module complete/);
 });
 
 test("review is available in each module and warmup explains sign choices", async () => {
@@ -544,12 +588,13 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
         }
         click("all-lessons");
       }
-      const signedStatus = () =>
+      const moduleStatus = (topic) =>
         document
-          .querySelector("#lessons-integers")
+          .querySelector(`#lessons-${topic}`)
           .closest(".topic-card")
           .querySelector(".card-bottom").textContent;
-      assert.match(signedStatus(), /Quiz remaining/);
+      assert.match(moduleStatus("integers"), /Quiz remaining/);
+      assert.match(moduleStatus("pemdas"), /Quiz remaining/);
       assert.equal(
         document.querySelector('[data-module="integers"] .path-node.done'),
         null,
@@ -561,7 +606,7 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
       assert.match(document.querySelector(".stats-grid").textContent, new RegExp(String(totalProblems)));
       assert.match(
         document.querySelector(".stats-grid").textContent,
-        /3\s*\/ 4Modules completed/,
+        /2\s*\/ 4Modules completed/,
       );
       assert.equal(
         lessons.filter(
@@ -570,18 +615,19 @@ test("lesson, persistence, visual tools, and calculator user flows", async (t) =
         lessons.length,
       );
       click("home");
-      click("activity-quiz");
-      submit("#quiz-start-form");
-      for (let i = 0; i < 10; i++) {
-        type("#activity-answer", activityQuestion(persisted().activity).answer);
-        submit("#activity-answer-form");
-        if (i < 9) click("activity-next");
+      for (const [topic, action] of [["integers", "activity-quiz"], ["pemdas", "activity-quiz:pemdas"]]) {
+        click(`filter:${topic}`);
+        click(action);
+        submit("#quiz-start-form");
+        for (let i = 0; i < 10; i++) {
+          type("#activity-answer", activityQuestion(persisted().activity).answer);
+          submit("#activity-answer-form");
+          if (i < 9) click("activity-next");
+        }
+        click("activity-exit");
+        assert.match(moduleStatus(topic), /Module complete/);
+        assert.ok(document.querySelector(`[data-module="${topic}"] .path-node.done`));
       }
-      click("activity-exit");
-      assert.match(signedStatus(), /Module complete/);
-      assert.ok(
-        document.querySelector('[data-module="integers"] .path-node.done'),
-      );
       click("view:progress");
       assert.match(
         document.querySelector(".stats-grid").textContent,

@@ -1,5 +1,5 @@
 import { escapeHTML as esc } from "./math.js";
-import { activityDay, activityZone, attempts, emptyStats, reviewTimingLimit, statFields } from "./practice-stats.js";
+import { activityDay, activityZone, attempts, emptyStats, quizTimingFields, reviewTimingFields, reviewTimingLimit, statFields } from "./practice-stats.js";
 import { onlineLearners } from "./practice-presence.js";
 import { lessons, topics } from "./lessons.js";
 
@@ -111,22 +111,26 @@ function breakdown(stats) {
   ].map(([label, value]) => `<div><dt>${label}</dt><dd>${count(value)}</dd></div>`).join("")}</dl>`;
 }
 
-function timing(stats) {
-  const { timedQuiz, quizMs, timedFilteredSignedReview, filteredSignedReviewMs } = stats;
-  const largest = Math.max(timedQuiz ? quizMs / timedQuiz : 0, timedFilteredSignedReview ? filteredSignedReviewMs / timedFilteredSignedReview : 0, 1);
+function timing(stats, topic) {
+  const quiz = quizTimingFields[topic.id];
+  const review = reviewTimingFields[topic.id];
+  const timedQuiz = stats[quiz.answers], quizMs = stats[quiz.ms];
+  const timedReview = stats[review.answers], reviewMs = stats[review.ms];
+  if (topic.id !== "integers" && !timedQuiz && !timedReview && !stats[quiz.runs]) return "";
+  const largest = Math.max(timedQuiz ? quizMs / timedQuiz : 0, timedReview ? reviewMs / timedReview : 0, 1);
   const bar = (label, ms, size) => {
     const width = size ? Math.floor(ms / size * 1000 / largest) / 10 : 0;
     return `<div class="admin-bar"><span>${label}</span><strong>${average(ms, size)}</strong>
       <div class="admin-bar-track" aria-hidden="true"><span style="width:${width}%"></span></div>
       <small>${plural(size, "timed answer")}</small></div>`;
   };
-  return `<section class="admin-card admin-timing" aria-labelledby="admin-timing-title">
-    <h2 id="admin-timing-title">Signed numbers quiz timing</h2>
+  return `<section class="admin-card admin-timing" aria-labelledby="admin-timing-${topic.id}">
+    <h2 id="admin-timing-${topic.id}">${esc(topic.title)} quiz timing</h2>
     <p>Average active time per answer for the selected month.</p>
-    <div class="admin-bars">${bar("Quiz", quizMs, timedQuiz)}${bar("Review", filteredSignedReviewMs, timedFilteredSignedReview)}</div>
+    <div class="admin-bars">${bar("Quiz", quizMs, timedQuiz)}${bar("Review", reviewMs, timedReview)}</div>
     <div class="admin-timing-totals">
-      ${metric("Quizzes passed", `${count(stats.quizPasses)} / ${count(stats.quizRuns)}`, "Runs that ended in a pass or a wrong answer")}
-      ${metric("Average time to pass", average(stats.passedQuizMs, stats.timedPasses), plural(stats.timedPasses, "timed pass"))}
+      ${metric("Quizzes passed", `${count(stats[quiz.passes])} / ${count(stats[quiz.runs])}`, "Runs that ended in a pass or a wrong answer")}
+      ${metric("Average time to pass", average(stats[quiz.passedMs], stats[quiz.timedPasses]), plural(stats[quiz.timedPasses], "timed pass"))}
     </div>
     <p class="admin-muted">Timing is approximate. Quiz and review questions can differ in difficulty, so timing alone can’t establish cheating.</p>
   </section>`;
@@ -264,7 +268,7 @@ export function createAdminDashboard({ read, readSummaries = async () => [], red
             ${calendar(month, learner, day)}
             <div class="admin-day-detail" aria-live="polite"><h3>${day ? dayFormat.format(date(day)) : "Month totals"}</h3>
             <p>${plural(attempts(selectedStats), "attempt")} · ${count(selectedStats.correct)} correct · ${duration(selectedStats.activeMs)} active</p>${breakdown(selectedStats)}</div></section>
-            ${timing(learner)}</div>`}`}
+            <div class="admin-quiz-timings">${topics.filter(({ quizPassKey }) => quizPassKey).map((topic) => timing(learner, topic)).join("")}</div></div>`}`}
       </div>`;
     },
   };

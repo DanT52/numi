@@ -109,6 +109,28 @@ test("review timing includes all topics and excludes answers over two active min
   assert.equal(stats().filteredSignedReviewMs, 120_000);
 });
 
+test("order-of-operations quiz and review timings stay separate from signed numbers", () => {
+  const { clock, stats, wait } = exampleClock();
+  clock.interact();
+  clock.openQuestion();
+  wait(22);
+  clock.answer("review", { correct: true, topic: "pemdas" });
+  clock.startQuiz();
+  clock.openQuestion();
+  wait(40);
+  clock.answer("quiz", { correct: true, finished: true, topic: "pemdas" });
+  assert.equal(stats().quiz, 1);
+  assert.equal(stats().timedQuiz, 0);
+  assert.equal(stats().quizPasses, 0);
+  assert.equal(stats().timedPemdasQuiz, 1);
+  assert.equal(stats().pemdasQuizMs, 40_000);
+  assert.equal(stats().pemdasQuizPasses, 1);
+  assert.equal(stats().passedPemdasQuizMs, 40_000);
+  assert.equal(stats().timedReview, 1);
+  assert.equal(stats().filteredPemdasReviewMs, 22_000);
+  assert.equal(stats().timedFilteredSignedReview, 0);
+});
+
 test("the admin summary derives completed lessons and review records from a saved document", () => {
   const [complete, incomplete] = lessons;
   const completedIndices = complete.problems.map((_, index) => index);
@@ -170,21 +192,24 @@ test("dashboard groups calendar days and shows comparable timing and sample size
   const today = activityDay();
   const base = { uid: "learner", email: "learner@example.com", lastAt: Date.now(), day: today, ...emptyStats() };
   const rows = [
-    { ...base, quiz: 10, quizMs: 80_000, timedQuiz: 10, quizRuns: 1, quizPasses: 1, timedPasses: 1, passedQuizMs: 99_000 },
+    { ...base, quiz: 11, quizMs: 80_000, timedQuiz: 10, quizRuns: 1, quizPasses: 1, timedPasses: 1, passedQuizMs: 99_000,
+      timedPemdasQuiz: 1, pemdasQuizMs: 25_000, pemdasQuizRuns: 1 },
     { ...base, review: 5, signedReviewMs: 900_000, timedSignedReview: 5, activeMs: 125_000, warmup: 1,
-      reviewMs: 90_000, timedReview: 3, excludedReview: 1, filteredSignedReviewMs: 40_000, timedFilteredSignedReview: 2 },
+      reviewMs: 90_000, timedReview: 3, excludedReview: 1, filteredSignedReviewMs: 40_000, timedFilteredSignedReview: 2,
+      filteredPemdasReviewMs: 50_000, timedFilteredPemdasReview: 1 },
   ];
   const summary = { uid: base.uid, email: base.email, completedLessons: 3, reviewBest: { integers: 12 } };
   const summaries = [summary, { ...summary, uid: "inactive", email: "inactive@example.com" }];
   const [learner, inactive] = summarizeActivity(rows, summaries);
   assert.equal(learner.days.size, 1);
-  assert.equal(learner.days.get(today).quiz, 10);
+  assert.equal(learner.days.get(today).quiz, 11);
   assert.equal(inactive.days.size, 0);
   const dashboard = createAdminDashboard({ read: async () => rows, readSummaries: async () => summaries, redraw: () => {} });
   await dashboard.load();
   const { document } = parseHTML(dashboard.view());
-  assert.match(document.querySelector(`[data-action="admin-day:${today}"]`).getAttribute("aria-label"), /16 attempts, 2m 5s active/);
-  assert.deepEqual([...document.querySelectorAll(".admin-bar strong")].map(({ textContent }) => textContent), ["8s", "20s"]);
+  assert.match(document.querySelector(`[data-action="admin-day:${today}"]`).getAttribute("aria-label"), /17 attempts, 2m 5s active/);
+  assert.deepEqual([...document.querySelectorAll('[aria-labelledby="admin-timing-integers"] .admin-bar strong')].map(({ textContent }) => textContent), ["8s", "20s"]);
+  assert.deepEqual([...document.querySelectorAll('[aria-labelledby="admin-timing-pemdas"] .admin-bar strong')].map(({ textContent }) => textContent), ["25s", "50s"]);
   assert.match(document.querySelector(".admin-timing").textContent, /1m 39s/);
   assert.deepEqual([...document.querySelectorAll(".admin-learner-overview strong")].map(({ textContent }) => textContent), [`3 / ${lessons.length}`, "12", "30s"]);
   assert.match(document.querySelector(".admin-learner-overview").textContent, /3 timed answers · 1 excluded/);

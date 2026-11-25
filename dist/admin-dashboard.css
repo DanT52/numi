@@ -13,7 +13,7 @@
 .admin-head h1, .admin-month h2, .admin-card h2 { margin: 0; }
 .admin-head p, .admin-card p { margin: .35rem 0 0; }
 .admin-month h2 { text-align: center; font-size: 1.15rem; }
-.admin-overview, .admin-detail, .admin-timing-totals {
+.admin-overview, .admin-detail, .admin-timing-totals, .admin-quiz-timings {
   display: grid;
   gap: .8rem;
 }

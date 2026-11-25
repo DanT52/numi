@@ -1,21 +1,27 @@
 import { lessons, topics } from "./lessons.js";
-import { calculate, checkAnswer } from "./math.js";
+import { calculate, checkAnswer, pretty } from "./math.js";
 import { signedQuizGroups, signedWarmup } from "./signed-activities.js";
 import { orderWarmup } from "./pemdas-warmup.js";
-import { mergeActivityScores, signedQuizGoal } from "./activity-scores.js";
+import { orderQuizGroups } from "./pemdas-quiz.js";
+import { mergeActivityScores, quizGoal } from "./activity-scores.js";
 
 const warmupPools = { integers: signedWarmup, pemdas: orderWarmup };
 
-const quizGroups = Object.entries(signedQuizGroups).map(
-  ([group, expressions]) =>
-    expressions.map((expr) => ({
-      group,
-      expr,
-      answer: String(calculate(expr)),
-      type: "number",
-    })),
-);
-const quizPool = quizGroups.flat();
+function quizBank(groups) {
+  const questions = [];
+  const questionGroups = Object.entries(groups).map(([group, expressions]) =>
+    expressions.map((expr) => {
+      questions.push({ group, expr, answer: pretty(calculate(expr)), type: "number" });
+      return questions.length - 1;
+    }),
+  );
+  return { questions, questionGroups };
+}
+
+const quizBanks = {
+  integers: quizBank(signedQuizGroups),
+  pemdas: quizBank(orderQuizGroups),
+};
 const reviewPools = Object.fromEntries(
   topics.map(({ id }) => [
     id,
@@ -36,9 +42,9 @@ function shuffle(items, random) {
   return result;
 }
 
-function shuffledQuiz(random) {
+function shuffledQuiz(topic, random) {
   return shuffle(
-    quizGroups.map((group) => group[Math.floor(random() * group.length)]),
+    quizBanks[topic].questionGroups.map((group) => group[Math.floor(random() * group.length)]),
     random,
   );
 }
@@ -56,12 +62,11 @@ function reviewDeck(topic, last, random) {
 export function startActivity(mode, topic, random = Math.random) {
   if (
     !Object.hasOwn(reviewPools, topic) ||
-    (mode === "quiz" && topic !== "integers")
+    (mode === "quiz" && !Object.hasOwn(quizBanks, topic))
   )
     return null;
   let deck;
-  if (mode === "quiz")
-    deck = shuffledQuiz(random).map((problem) => quizPool.indexOf(problem));
+  if (mode === "quiz") deck = shuffledQuiz(topic, random);
   if (mode === "review") deck = reviewDeck(topic, undefined, random);
   if (mode === "warmup")
     deck = shuffle(warmupPools[topic]?.map((_, i) => i) || [], random);
@@ -82,23 +87,23 @@ export function startActivity(mode, topic, random = Math.random) {
 
 export function restoreFixedQuiz(state) {
   const run = state.activity;
-  if (run?.mode !== "quiz" || !(run.deck?.length > signedQuizGoal)) return;
-  const deck = run.deck.slice(0, signedQuizGoal);
-  if (run.correctCount < signedQuizGoal) {
+  if (run?.mode !== "quiz" || run.topic !== "integers" || !(run.deck?.length > quizGoal)) return;
+  const deck = run.deck.slice(0, quizGoal);
+  if (run.correctCount < quizGoal) {
     state.activity = { ...run, deck };
     return;
   }
   state.activity = {
     ...run,
     deck,
-    index: signedQuizGoal - 1,
-    streak: signedQuizGoal,
-    correctCount: signedQuizGoal,
+    index: quizGoal - 1,
+    streak: quizGoal,
+    correctCount: quizGoal,
     result: { correct: true },
   };
   state.activityScores = mergeActivityScores(state.activityScores, {
-    signedQuizBest: signedQuizGoal,
-    signedQuizPassed: signedQuizGoal,
+    signedQuizBest: quizGoal,
+    signedQuizPassed: quizGoal,
   });
 }
 
@@ -106,7 +111,7 @@ export function activityQuestion(run) {
   if (!run) return undefined;
   const pool =
     run.mode === "quiz"
-      ? quizPool
+      ? quizBanks[run.topic]?.questions
       : run.mode === "warmup"
         ? warmupPools[run.topic]
         : reviewPools[run.topic];
@@ -126,10 +131,11 @@ export function checkActivity(run, answer, scores) {
   if (!question || run.result || !answer.trim()) return null;
   if (run.mode === "warmup" && !(question.choices || ["positive", "negative", "zero", "undefined"]).includes(answer))
     return null;
+  const quizNumber = run.topic === "integers" ? /^[+−-]?\d+$/ : /^[+−-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
   const correct =
     run.mode === "warmup"
       ? answer === (question.first || question.sign)
-      : (run.mode !== "quiz" || /^[+−-]?\d+$/.test(answer.trim())) &&
+      : (run.mode !== "quiz" || quizNumber.test(answer.trim())) &&
         checkAnswer(answer, question).correct;
   const next = {
     ...run,
@@ -139,8 +145,9 @@ export function checkActivity(run, answer, scores) {
   };
   const point = run.mode === "review" ? { [run.topic]: next.streak } : {};
   if (run.mode === "quiz") {
-    point.signedQuizBest = next.streak;
-    if (next.streak === signedQuizGoal) point.signedQuizPassed = signedQuizGoal;
+    const { quizBestKey, quizPassKey } = topics.find(({ id }) => id === run.topic);
+    point[quizBestKey] = next.streak;
+    if (next.streak === quizGoal) point[quizPassKey] = quizGoal;
   }
   return { run: next, scores: mergeActivityScores(scores, point) };
 }

@@ -85,7 +85,7 @@ test("prime products only contain prime factors", () => {
 });
 test("expanded curriculum has complete lessons and valid problems", () => {
   const lessonCounts = { fractions: 7, integers: 6, pemdas: 3, factors: 2 };
-  const orderPracticeCounts = { "pemdas-1": 16, "pemdas-2": 24, "pemdas-3": 15 };
+  const orderPracticeCounts = { "pemdas-1": 16, "pemdas-2": 24, "pemdas-3": 24 };
   assert.equal(lessons.length, 18);
   assert.equal(new Set(lessons.map((l) => l.id)).size, lessons.length);
   for (const topic of topics)
