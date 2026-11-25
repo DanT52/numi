@@ -3,7 +3,7 @@ export default {
   topic: "pemdas",
   title: "Parentheses, powers & negative signs",
   subtitle: "Untangle expressions with signed numbers.",
-  minutes: 25,
+  minutes: 35,
   tool: "calculator",
   rule: "A negative sign outside a power is applied after the power: −3² = −9. Parentheses change the base: (−3)² = 9. Keep negative numbers in parentheses when multiplying them.",
   example: {
@@ -98,6 +98,46 @@ export default {
       ["30/(2*(-3))+(-2)^2", "-1", "Find the denominator and the square first.", "2 × (−3) = −6 and (−2)² = 4. Then 30 ÷ (−6) = −5, and −5 + 4 = −1."],
       ["-(5-8)^2+12/(-3)", "-13", "Square the value in parentheses before applying the outside minus.", "5 − 8 = −3. Its square is 9, so the first term is −9. Then 12 ÷ (−3) = −4 and −9 + (−4) = −13."],
       ["(-2)^3-24/(-2*(1+3))", "-5", "Start with the innermost sum, then evaluate the denominator and power.", "1 + 3 = 4. The denominator is −8, so 24 ÷ (−8) = −3. Then −8 − (−3) = −5."],
+      [
+        "-5^2+(-4)^2+6", "-3",
+        "Check which minus sign is part of the base before squaring.",
+        "−5² gives −25, and (−4)² gives 16. Then −25 + 16 + 6 = −3.",
+      ],
+      [
+        "(-6+2)^2-3*(-5)", "31",
+        "Simplify the sum inside the parentheses. Square that result, then work out the product.",
+        "−6 + 2 = −4, so the square is 16. The product is −15. Then 16 − (−15) = 31.",
+      ],
+      [
+        "45/(-3)^2-8", "-3",
+        "Square the whole negative base before dividing.",
+        "(−3)² = 9. Then 45 ÷ 9 = 5, and 5 − 8 = −3.",
+      ],
+      [
+        "-2*(7-11)+(-3)^3", "-19",
+        "Work out the difference in parentheses and the cube before combining the terms.",
+        "7 − 11 = −4. Then (−2) × (−4) = 8 and (−3)³ = −27. Add to get −19.",
+      ],
+      [
+        "64/(-4)/(-2)-7", "1",
+        "The two divisions have equal priority. Start on the left.",
+        "64 ÷ (−4) = −16. Then −16 ÷ (−2) = 8, and 8 − 7 = 1.",
+      ],
+      [
+        "18-3*(2-(-4))^2", "-90",
+        "Rewrite the subtraction inside the outer parentheses as addition.",
+        "2 − (−4) = 6. Then 6² = 36 and 3 × 36 = 108. Subtract to get 18 − 108 = −90.",
+      ],
+      [
+        "(-2)^4-48/(3*(-2))", "24",
+        "Find the power and work out the denominator before the final subtraction.",
+        "(−2)⁴ = 16 and 3 × (−2) = −6. Then 48 ÷ (−6) = −8, so 16 − (−8) = 24.",
+      ],
+      [
+        "-(4-9)^2+6*(-2)-(-7)", "-30",
+        "Apply the minus outside the square after evaluating the power.",
+        "4 − 9 = −5. Squaring gives 25, then the outside minus makes it −25. The product is −12. Finish with −25 − 12 + 7 = −30.",
+      ],
     ].map(([expr, answer, hint, solution]) => ({ expr, answer, hint, solution, prompt: "Find the answer.", type: "number" })),
   ],
 };

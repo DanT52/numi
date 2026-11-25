@@ -2140,7 +2140,7 @@ footer {
     font-size: 1.3rem;
   }
   .lesson-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .lesson-sidebar {
     display: none;

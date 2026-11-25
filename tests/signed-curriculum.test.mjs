@@ -256,6 +256,6 @@ test("each lesson is loaded from its own category file", async () => {
           found.push(lesson.id);
         }
     }
-  assert.equal(found.length, 17);
-  assert.equal(new Set(found).size, 17);
+  assert.equal(found.length, lessons.length);
+  assert.equal(new Set(found).size, lessons.length);
 });
